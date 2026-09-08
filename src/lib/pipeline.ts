@@ -2,10 +2,22 @@ import sharp from "sharp";
 import exifr from "exifr";
 import { randomUUID } from "node:crypto";
 import { STANDARD, type PartFamily } from "./iso";
+import fs from "node:fs";
 import { StubClassifier, type Classifier, type Features } from "./classifier";
+import { OnnxClassifier } from "./onnx-classifier";
 import { WitnessRecord } from "./schema";
 
-const defaultClassifier: Classifier = new StubClassifier();
+// Prefer a real ONNX model when one is present; otherwise the stub. Override
+// the path with WITNESS_ONNX_MODEL. Resolved once, lazily.
+let cachedClassifier: Classifier | null = null;
+function defaultClassifier(): Classifier {
+  if (cachedClassifier) return cachedClassifier;
+  const modelPath = process.env.WITNESS_ONNX_MODEL || "./data/models/model.onnx";
+  cachedClassifier = fs.existsSync(modelPath)
+    ? new OnnxClassifier(modelPath)
+    : new StubClassifier();
+  return cachedClassifier;
+}
 
 export interface AnalyzeOptions {
   imageName: string;
@@ -20,7 +32,7 @@ export async function analyzeImage(
   buffer: Buffer,
   opts: AnalyzeOptions,
 ): Promise<WitnessRecord> {
-  const classifier = opts.classifier ?? defaultClassifier;
+  const classifier = opts.classifier ?? defaultClassifier();
 
   const [exif, features, thumb, dims] = await Promise.all([
     exifr.parse(buffer).then((e) => e ?? null).catch(() => null),
@@ -31,7 +43,7 @@ export async function analyzeImage(
       .then((m) => ({ width: m.width ?? 0, height: m.height ?? 0 })),
   ]);
 
-  const c = await classifier.classify(features);
+  const c = await classifier.classify({ ...features, buffer });
 
   const record = {
     id: randomUUID(),

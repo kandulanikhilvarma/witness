@@ -34,13 +34,29 @@ Routes: `/` (static), `/api/records`, `/console`, `/console/batches`,
 4. `zod` validates the record; PGlite stores it.
 5. Console pages read the DB at request time.
 
-## Classifier — stub, not a model
+## Classifier — real inference, placeholder labels
 
-`StubClassifier` (`stub-heuristic-v1`) is a deterministic heuristic over the
-feature vector, **not trained**. It exists so the whole chain runs before a real
-model lands. To swap in real inference: implement the `Classifier` interface
-with `onnxruntime-node`, drop the `.onnx` file, point `pipeline.ts` at it —
-nothing else changes. `onnxruntime-node` is installed but imported nowhere yet.
+Two implementations behind one `Classifier` interface (which now receives the
+image `buffer`, not just derived features):
+
+- `StubClassifier` (`stub-heuristic-v1`) — deterministic heuristic, no model.
+- `OnnxClassifier` (`onnx:<file>`) — real `onnxruntime-node` inference with a
+  generic ImageNet model (MobileNetV2-7, ONNX Model Zoo). ImageNet classes are
+  **not** ISO failure modes, so the top-1 class index is mapped to a mode
+  deterministically. **The inference is real; the label mapping is a
+  placeholder — not diagnostic.**
+
+`pipeline.ts` uses the ONNX model when a file exists at `./data/models/model.onnx`
+(override with `WITNESS_ONNX_MODEL`), else falls back to the stub. The model is
+git-ignored (14 MB); fetch it with:
+
+```
+mkdir -p data/models && curl -sL -o data/models/model.onnx \
+  https://github.com/onnx/models/raw/main/validated/vision/classification/mobilenet/model/mobilenetv2-7.onnx
+```
+
+To go diagnostic: train on failure-mode-labelled photos, export to ONNX, drop it
+in, and delete the class-index mapping in `onnx-classifier.ts`.
 
 ## Verification
 
@@ -67,5 +83,6 @@ stay on Turbopack (unaffected).
 
 ## Not yet built
 
-- Real ONNX model + inference (classifier is still `stub-heuristic-v1`).
+- A trained, diagnostic model. The ONNX path is wired and runs, but with a
+  generic ImageNet classifier — labels are placeholder-mapped, not real modes.
 - Auth, multi-workstation sync, full marketing site.

@@ -44,6 +44,7 @@ async function main() {
   const rec = posted.record;
   console.log("POST 201 →", {
     id: rec.id.slice(0, 8),
+    classifier: rec.classifier,
     standard: rec.standard,
     mode: `${rec.modeCode} ${rec.modeLabel}`,
     severity: rec.severity,
@@ -52,6 +53,9 @@ async function main() {
     thumbBytes: rec.thumb.length,
     batch: rec.batchCode,
   });
+  if (process.env.EXPECT_ONNX && !rec.classifier.startsWith("onnx")) {
+    throw new Error(`expected onnx classifier, got ${rec.classifier}`);
+  }
 
   const list = await (await fetch(`${base}/api/records`)).json();
   console.log("GET → records:", list.records.length);
