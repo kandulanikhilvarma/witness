@@ -114,6 +114,15 @@ async function main() {
   }
   console.log("review →", after.review);
 
+  // Label export must include the confirmed record.
+  const exp = await fetch(`${base}/api/export/labels`);
+  if (!exp.ok) throw new Error(`export → ${exp.status}`);
+  const manifest = await exp.json();
+  if (!Array.isArray(manifest.records) || manifest.count < 1) {
+    throw new Error(`empty manifest: ${JSON.stringify(manifest).slice(0, 120)}`);
+  }
+  console.log("export labels → count", manifest.count);
+
   // Filters must render.
   for (const qs of ["q=gear", "sev=1", "part=gear", "q=nonexistent-zzz"]) {
     const r = await fetch(`${base}/console?${qs}`);

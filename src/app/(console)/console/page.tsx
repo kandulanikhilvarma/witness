@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listRecords } from "@/lib/db";
+import { listRecords, stats } from "@/lib/db";
 import { RecordsTable } from "@/components/records-table";
 import { IngestForm } from "@/components/ingest-form";
 import { SEVERITY } from "@/lib/iso";
@@ -18,20 +18,42 @@ export default async function ConsolePage({
   const q = sp.q?.trim() || undefined;
   const filtered = Boolean(partFamily || severityMin !== undefined || q);
 
-  const records = await listRecords({ partFamily, severityMin, q });
+  const [records, st] = await Promise.all([
+    listRecords({ partFamily, severityMin, q }),
+    stats(),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-8 py-8">
-      <header className="mb-6">
-        <h1 className="font-display text-2xl">Records</h1>
-        <p className="mt-1 text-sm text-c-text-2">
-          {records.length} {records.length === 1 ? "record" : "records"}
-          {filtered ? " (filtered)" : ""}. Each traces to ISO 15243 (bearings) or
-          ISO 10825 (gears).
-        </p>
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl">Records</h1>
+          <p className="mt-1 text-sm text-c-text-2">
+            {records.length} {records.length === 1 ? "record" : "records"}
+            {filtered ? " (filtered)" : ""}. Each traces to ISO 15243 (bearings) or
+            ISO 10825 (gears).
+          </p>
+        </div>
+        {st.reviewed > 0 && (
+          <a
+            href="/api/export/labels"
+            className="rounded-sm border border-c-line bg-c-surface-2 px-3 py-2 text-2xs text-c-text hover:border-c-focus"
+          >
+            Export labels ({st.reviewed})
+          </a>
+        )}
       </header>
 
-      <IngestForm />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="Records" value={st.total} />
+        <Stat label="Confirmed" value={st.reviewed} />
+        <Stat label="Unconfirmed" value={st.unreviewed} />
+        <Stat label="Severity ≥ 3" value={st.atRisk} alert={st.atRisk > 0} />
+      </div>
+
+      <div className="mt-6">
+        <IngestForm />
+      </div>
 
       <form
         method="get"
@@ -80,10 +102,7 @@ export default async function ConsolePage({
           Filter
         </button>
         {filtered && (
-          <Link
-            href="/console"
-            className="px-2 py-2 text-2xs text-c-text-3 hover:text-c-text"
-          >
+          <Link href="/console" className="px-2 py-2 text-2xs text-c-text-3 hover:text-c-text">
             Clear
           </Link>
         )}
@@ -102,9 +121,30 @@ export default async function ConsolePage({
       </div>
 
       <p className="mt-6 text-2xs text-c-text-3">
-        Classifier: <span className="tabular">stub-heuristic-v1</span> — a
-        placeholder. Failure modes and severity are not yet from a trained model.
+        Classifier suggestions come from a placeholder model — confirm each record
+        to set the authoritative classification.
       </p>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  alert = false,
+}: {
+  label: string;
+  value: number;
+  alert?: boolean;
+}) {
+  return (
+    <div className="rounded-sm border border-c-line bg-c-surface px-4 py-3">
+      <div className="text-2xs uppercase tracking-wide text-c-text-3">{label}</div>
+      <div
+        className={`mt-1 font-display text-2xl tabular ${alert ? "text-sev-3" : "text-c-text"}`}
+      >
+        {value}
+      </div>
     </div>
   );
 }

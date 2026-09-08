@@ -312,3 +312,36 @@ export async function recordsByBatch(code: string): Promise<WitnessRecord[]> {
   );
   return res.rows.map(toRecord);
 }
+
+// Confirmed records only — the labelled set that trains a real model.
+export async function listReviewed(): Promise<WitnessRecord[]> {
+  const db = await getDb();
+  const res = await db.query<Row>(
+    `SELECT * FROM records WHERE reviewed_at IS NOT NULL ORDER BY reviewed_at DESC`,
+  );
+  return res.rows.map(toRecord);
+}
+
+export interface Stats {
+  total: number;
+  reviewed: number;
+  unreviewed: number;
+  atRisk: number; // effective severity >= 3
+}
+
+export async function stats(): Promise<Stats> {
+  const db = await getDb();
+  const res = await db.query<{ total: number; reviewed: number; at_risk: number }>(
+    `SELECT COUNT(*)::int AS total,
+            COUNT(reviewed_at)::int AS reviewed,
+            COUNT(*) FILTER (WHERE COALESCE(review_severity, severity) >= 3)::int AS at_risk
+       FROM records`,
+  );
+  const r = res.rows[0] ?? { total: 0, reviewed: 0, at_risk: 0 };
+  return {
+    total: r.total,
+    reviewed: r.reviewed,
+    unreviewed: r.total - r.reviewed,
+    atRisk: r.at_risk,
+  };
+}
