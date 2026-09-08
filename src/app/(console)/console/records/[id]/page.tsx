@@ -2,7 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRecord } from "@/lib/db";
+import { effectiveMode, effectiveSeverity } from "@/lib/schema";
 import { SeverityChip } from "@/components/severity-chip";
+import { ReviewForm } from "@/components/review-form";
 import { severity as sevInfo } from "@/lib/iso";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +18,9 @@ export default async function RecordDetail({
   const rec = await getRecord(id);
   if (!rec) notFound();
 
-  const s = sevInfo(rec.severity);
-  // EXIF values can be nested objects or dates — flatten to readable strings,
-  // cap the count so a phone's 200-tag dump doesn't run off the page.
+  const eff = effectiveMode(rec);
+  const effSev = effectiveSeverity(rec);
+  const s = sevInfo(effSev);
   const exif = rec.exif
     ? Object.entries(rec.exif)
         .filter(([, v]) => v != null && typeof v !== "object")
@@ -36,7 +38,7 @@ export default async function RecordDetail({
           <h1 className="font-display text-2xl capitalize">{rec.partFamily}</h1>
           <p className="mt-1 text-2xs text-c-text-3">{rec.imageName}</p>
         </div>
-        <SeverityChip level={rec.severity} />
+        <SeverityChip level={effSev} />
       </header>
 
       <div className="mt-6 grid gap-8 md:grid-cols-[280px_1fr]">
@@ -51,20 +53,18 @@ export default async function RecordDetail({
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
           <Field label="Standard">{rec.standard}</Field>
-          <Field label="Failure mode">
-            <span className="tabular text-c-text-3">{rec.modeCode}</span>{" "}
-            {rec.modeLabel}
+          <Field label="Classification">
+            <span className="tabular text-c-text-3">{eff.code}</span> {eff.label}{" "}
+            {rec.review ? (
+              <span className="text-2xs text-sev-0">· confirmed</span>
+            ) : (
+              <span className="text-2xs text-c-text-3">· model, unconfirmed</span>
+            )}
           </Field>
           <Field label="Severity">
-            {rec.severity} · {s.label}
+            {effSev} · {s.label}
           </Field>
           <Field label="Recommended action">{s.action}</Field>
-          <Field label="Confidence">
-            <span className="tabular">{Math.round(rec.confidence * 100)}%</span>
-          </Field>
-          <Field label="Classifier">
-            <span className="tabular">{rec.classifier}</span>
-          </Field>
           <Field label="Batch">
             {rec.batchCode ? (
               <Link
@@ -85,8 +85,34 @@ export default async function RecordDetail({
           <Field label="Inspected">
             <span className="tabular">{new Date(rec.createdAt).toLocaleString()}</span>
           </Field>
+          {rec.review && (
+            <Field label="Reviewed">
+              <span className="tabular">
+                {new Date(rec.review.reviewedAt).toLocaleString()}
+              </span>
+            </Field>
+          )}
         </dl>
       </div>
+
+      <section className="mt-8">
+        <h2 className="font-display text-lg">Review</h2>
+        <p className="mt-1 text-sm text-c-text-2">
+          Model suggested{" "}
+          <span className="tabular text-c-text-3">{rec.modeCode}</span> {rec.modeLabel},
+          severity {rec.severity}, confidence {Math.round(rec.confidence * 100)}% (
+          <span className="tabular">{rec.classifier}</span>). Confirm or override —
+          your call is authoritative and becomes a training label.
+        </p>
+        <div className="mt-3">
+          <ReviewForm
+            id={rec.id}
+            partFamily={rec.partFamily}
+            currentModeCode={eff.code}
+            currentSeverity={effSev}
+          />
+        </div>
+      </section>
 
       <section className="mt-8">
         <h2 className="font-display text-lg">EXIF</h2>

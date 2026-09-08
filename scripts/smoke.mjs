@@ -99,6 +99,21 @@ async function main() {
     worst: b.worstSeverity,
   });
 
+  // Human review overrides the model and wins.
+  const rev = await fetch(`${base}/api/records/${rec.id}/review`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ modeCode: "crack", severity: 4 }),
+  });
+  if (!rev.ok) throw new Error(`review → ${rev.status}`);
+  const after = (await (await fetch(`${base}/api/records`)).json()).records.find(
+    (x) => x.id === rec.id,
+  );
+  if (!after.review || after.review.severity !== 4 || after.review.modeCode !== "crack") {
+    throw new Error(`review not applied: ${JSON.stringify(after.review)}`);
+  }
+  console.log("review →", after.review);
+
   // Filters must render.
   for (const qs of ["q=gear", "sev=1", "part=gear", "q=nonexistent-zzz"]) {
     const r = await fetch(`${base}/console?${qs}`);

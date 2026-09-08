@@ -80,6 +80,11 @@ stay on Turbopack (unaffected).
   upserts provenance.
 - Record filtering/search — part family, minimum severity, free text over image
   name / failure mode / batch.
+- Human review — the inspector confirms or overrides the failure mode + severity
+  per record (`/api/records/[id]/review`, review form on detail). The review
+  wins everywhere (tables, filters, detail); the model's output is kept as
+  provenance. Each confirmed record is a `(model suggestion, human label)` pair —
+  the training data that unblocks a real diagnostic model.
 
 ## Not yet built
 

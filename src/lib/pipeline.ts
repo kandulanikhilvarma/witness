@@ -61,6 +61,7 @@ export async function analyzeImage(
     thumb,
     exif: exif as Record<string, unknown> | null,
     batchCode: opts.batchCode ?? null,
+    review: null,
   };
 
   return WitnessRecord.parse(record);

@@ -44,6 +44,14 @@ SELECT DISTINCT batch_code, part_family, now()
 ON CONFLICT (code) DO NOTHING;
 `;
 
+// Additive columns for human review, applied on every boot.
+const MIGRATE = `
+ALTER TABLE records ADD COLUMN IF NOT EXISTS review_mode_code TEXT;
+ALTER TABLE records ADD COLUMN IF NOT EXISTS review_mode_label TEXT;
+ALTER TABLE records ADD COLUMN IF NOT EXISTS review_severity INT;
+ALTER TABLE records ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+`;
+
 // One instance across dev HMR reloads — Next re-evaluates modules on change,
 // and a second PGlite on the same dir would fight for the lock.
 const g = globalThis as unknown as { __witnessDb?: Promise<PGlite> };
@@ -52,6 +60,7 @@ function getDb(): Promise<PGlite> {
   return (g.__witnessDb ??= (async () => {
     const db = new PGlite("./data/witness");
     await db.exec(SCHEMA);
+    await db.exec(MIGRATE);
     await db.exec(BACKFILL);
     return db;
   })());
@@ -73,6 +82,10 @@ type Row = {
   thumb: string;
   exif: Record<string, unknown> | null;
   batch_code: string | null;
+  review_mode_code: string | null;
+  review_mode_label: string | null;
+  review_severity: number | null;
+  reviewed_at: string | null;
 };
 
 function toRecord(r: Row): WitnessRecord {
@@ -92,6 +105,15 @@ function toRecord(r: Row): WitnessRecord {
     thumb: r.thumb,
     exif: r.exif,
     batchCode: r.batch_code,
+    review:
+      r.reviewed_at && r.review_mode_code
+        ? {
+            modeCode: r.review_mode_code,
+            modeLabel: r.review_mode_label ?? r.review_mode_code,
+            severity: r.review_severity ?? 0,
+            reviewedAt: new Date(r.reviewed_at).toISOString(),
+          }
+        : null,
   };
 }
 
@@ -135,7 +157,7 @@ export async function listRecords(f: RecordFilters = {}): Promise<WitnessRecord[
   const params: unknown[] = [];
   if (typeof f.severityMin === "number") {
     params.push(f.severityMin);
-    where.push(`severity >= $${params.length}`);
+    where.push(`COALESCE(review_severity, severity) >= $${params.length}`);
   }
   if (f.partFamily) {
     params.push(f.partFamily);
@@ -144,7 +166,9 @@ export async function listRecords(f: RecordFilters = {}): Promise<WitnessRecord[
   if (f.q) {
     params.push(`%${f.q}%`);
     const p = `$${params.length}`;
-    where.push(`(image_name ILIKE ${p} OR mode_label ILIKE ${p} OR batch_code ILIKE ${p})`);
+    where.push(
+      `(image_name ILIKE ${p} OR mode_label ILIKE ${p} OR review_mode_label ILIKE ${p} OR batch_code ILIKE ${p})`,
+    );
   }
   params.push(f.limit ?? 100);
   const sql = `SELECT * FROM records ${
@@ -158,6 +182,25 @@ export async function getRecord(id: string): Promise<WitnessRecord | null> {
   const db = await getDb();
   const res = await db.query<Row>(`SELECT * FROM records WHERE id = $1`, [id]);
   return res.rows[0] ? toRecord(res.rows[0]) : null;
+}
+
+// The inspector's correction. Model columns are left untouched — the pair
+// (model suggestion, human label) is the training signal for a real model.
+export async function setReview(
+  id: string,
+  modeCode: string,
+  modeLabel: string,
+  severity: number,
+): Promise<WitnessRecord | null> {
+  const db = await getDb();
+  await db.query(
+    `UPDATE records
+        SET review_mode_code = $2, review_mode_label = $3,
+            review_severity = $4, reviewed_at = now()
+      WHERE id = $1`,
+    [id, modeCode, modeLabel, severity],
+  );
+  return getRecord(id);
 }
 
 export interface BatchMeta {
