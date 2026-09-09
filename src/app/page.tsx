@@ -19,12 +19,23 @@ export default function Home() {
           <span className="inline-block h-2 w-2 rounded-full bg-oxide" aria-hidden />
           Witness
         </span>
-        <Link
-          href="/console"
-          className="rounded-full border border-iron/50 px-4 py-1.5 text-sm text-paper-2 transition-colors hover:border-oxide hover:text-paper"
-        >
-          Open console →
-        </Link>
+        <nav className="flex items-center gap-1 text-sm">
+          <Link href="/taxonomy" className="rounded-full px-3 py-1.5 text-paper-2 transition-colors hover:text-paper">
+            Taxonomy
+          </Link>
+          <Link href="/transparency" className="rounded-full px-3 py-1.5 text-paper-2 transition-colors hover:text-paper">
+            Transparency
+          </Link>
+          <Link href="/model-card" className="rounded-full px-3 py-1.5 text-paper-2 transition-colors hover:text-paper">
+            Model card
+          </Link>
+          <Link
+            href="/console"
+            className="ml-1 rounded-full border border-iron/50 px-4 py-1.5 text-paper-2 transition-colors hover:border-oxide hover:text-paper"
+          >
+            Open console →
+          </Link>
+        </nav>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-8 pb-24">
@@ -50,12 +61,12 @@ export default function Home() {
             >
               Open the console
             </Link>
-            <a
-              href="https://github.com"
+            <Link
+              href="/transparency"
               className="rounded-full border border-iron/40 px-6 py-3 text-base text-paper-2 transition-colors hover:border-brass hover:text-paper"
             >
               How it works
-            </a>
+            </Link>
           </div>
         </section>
 
