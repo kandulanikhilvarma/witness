@@ -70,7 +70,6 @@ export default function Home() {
               <div
                 key={s.level}
                 className="rounded-sm border border-iron/20 bg-ground-2/60 px-3 py-3"
-                style={{ borderLeft: `3px solid var(--color-sev-${s.level})` }}
               >
                 <div className="flex items-center gap-2">
                   <span
