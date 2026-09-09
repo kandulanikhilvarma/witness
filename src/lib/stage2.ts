@@ -23,13 +23,19 @@ export interface Stage2Result {
   source: string; // "keyless-stub" | "openrouter:<model>"
 }
 
+export function vlmConfigured(): boolean {
+  return Boolean(process.env.OPENROUTER_API_KEY);
+}
+
 export async function classifyCrop(buffer: Buffer, family: PartFamily): Promise<Stage2Result> {
   if (process.env.OPENROUTER_API_KEY) {
     try {
       return await openRouterForcedChoice(buffer, family);
-    } catch {
+    } catch (e) {
       // A model outage must not strand a finding — fall back to the keyless
-      // path and let the low confidence route it to human review.
+      // path and let the low confidence route it to human review. Log the
+      // reason (never the key) so a misconfigured VLM is diagnosable.
+      console.error("[stage2] OpenRouter failed, falling back to keyless:", e instanceof Error ? e.message : e);
     }
   }
   return keylessForcedChoice(buffer, family);

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseConfigured } from "@/lib/supabase/config";
 import { supabaseServer } from "@/lib/supabase/server";
 import { currentSession } from "@/lib/tenant";
-import { classifyCrop, CONFIDENCE_GATE } from "@/lib/stage2";
+import { classifyCrop, CONFIDENCE_GATE, vlmConfigured } from "@/lib/stage2";
 import { makeThumb } from "@/lib/pipeline";
 import { STANDARD, type PartFamily } from "@/lib/iso";
 
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { id: finding.id, result, routed: reviewState, gate: CONFIDENCE_GATE },
+    { id: finding.id, result, routed: reviewState, gate: CONFIDENCE_GATE, vlmConfigured: vlmConfigured() },
     { status: 201 },
   );
 }
