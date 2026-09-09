@@ -190,7 +190,15 @@ async function SupabaseConsole() {
             ISO 10825 (gears). Isolated by row-level security.
           </p>
         </div>
-        <SignOut />
+        <div className="flex items-center gap-2">
+          <a
+            href="/api/export/findings"
+            className="rounded-sm border border-c-line bg-c-surface-2 px-3 py-2 text-2xs text-c-text hover:border-c-focus"
+          >
+            Export JSON
+          </a>
+          <SignOut />
+        </div>
       </header>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

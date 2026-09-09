@@ -53,11 +53,19 @@ export default async function FindingPage({ params }: { params: Promise<{ id: st
             {f.iso_standard} · {family} · {new Date(f.created_at).toLocaleString()}
           </p>
         </div>
-        <span
-          className={`rounded-sm border px-2 py-1 font-mono text-2xs uppercase tracking-wide ${SEV_TEXT[f.severity]}`}
-        >
-          {sm.glyph} sev {f.severity} · {sm.label}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span
+            className={`rounded-sm border px-2 py-1 font-mono text-2xs uppercase tracking-wide ${SEV_TEXT[f.severity]}`}
+          >
+            {sm.glyph} sev {f.severity} · {sm.label}
+          </span>
+          <Link
+            href={`/report/${f.id}`}
+            className="rounded-sm border border-c-line bg-c-surface-2 px-3 py-1.5 text-2xs text-c-text hover:border-c-focus"
+          >
+            Warranty report →
+          </Link>
+        </div>
       </header>
 
       <div className="grid gap-6 md:grid-cols-[220px_1fr]">
