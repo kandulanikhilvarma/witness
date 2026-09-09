@@ -5,12 +5,15 @@ import { RecordsTable } from "@/components/records-table";
 import { IngestForm } from "@/components/ingest-form";
 import { SignOut } from "@/components/sign-out";
 import { SeverityChip } from "@/components/severity-chip";
-import { SEVERITY } from "@/lib/iso";
+import { SEVERITY, modeLabel } from "@/lib/iso";
 import { supabaseConfigured } from "@/lib/supabase/config";
 import { supabaseServer } from "@/lib/supabase/server";
 import { currentSession } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
+
+const SEV_TEXT = ["text-sev-0", "text-sev-1", "text-sev-2", "text-sev-3", "text-sev-4"];
+const SEV_BG_SOLID = ["bg-sev-0", "bg-sev-1", "bg-sev-2", "bg-sev-3", "bg-sev-4"];
 
 export default async function ConsolePage({
   searchParams,
@@ -168,6 +171,15 @@ async function SupabaseConsole() {
   const reviewed = findings.filter((f) => f.review_state === "confirmed" || f.review_state === "corrected").length;
   const atRisk = findings.filter((f) => f.severity >= 3).length;
 
+  const sevCounts = [0, 1, 2, 3, 4].map((lv) => findings.filter((f) => f.severity === lv).length);
+  const modeCounts = new Map<string, { std: string; n: number }>();
+  for (const f of findings) {
+    const cur = modeCounts.get(f.iso_mode) ?? { std: f.iso_standard, n: 0 };
+    cur.n += 1;
+    modeCounts.set(f.iso_mode, cur);
+  }
+  const topModes = [...modeCounts.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 4);
+
   return (
     <div className="mx-auto max-w-5xl px-8 py-8">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -188,10 +200,44 @@ async function SupabaseConsole() {
         <Stat label="Severity ≥ 3" value={atRisk} alert={atRisk > 0} />
       </div>
 
+      {total > 0 && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <section className="rounded-sm border border-c-line bg-c-surface p-4">
+            <h2 className="mb-3 text-2xs uppercase tracking-wide text-c-text-3">Severity distribution</h2>
+            <div className="space-y-1.5">
+              {sevCounts.map((n, lv) => (
+                <div key={lv} className="flex items-center gap-2 text-2xs">
+                  <span className={`w-4 tabular ${SEV_TEXT[lv]}`}>{lv}</span>
+                  <div className="h-3 flex-1 overflow-hidden rounded-sm bg-c-surface-2">
+                    <div
+                      className={SEV_BG_SOLID[lv]}
+                      style={{ width: total ? `${Math.max(n ? 4 : 0, (n / total) * 100)}%` : "0%", height: "100%" }}
+                    />
+                  </div>
+                  <span className="w-6 text-right tabular text-c-text-2">{n}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="rounded-sm border border-c-line bg-c-surface p-4">
+            <h2 className="mb-3 text-2xs uppercase tracking-wide text-c-text-3">Top failure modes</h2>
+            <ul className="space-y-1.5 text-sm">
+              {topModes.map(([code, { std, n }]) => (
+                <li key={code} className="flex items-center justify-between gap-2">
+                  <span className="text-c-text-2">
+                    <span className="tabular text-c-text-3">{code}</span> {modeLabel(std, code)}
+                  </span>
+                  <span className="tabular text-c-text">{n}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      )}
+
       <div className="mt-6 flex items-center gap-2 rounded-sm border border-dashed border-c-line bg-c-surface px-4 py-3 text-2xs text-c-text-3">
-        <span className="rounded-sm border border-c-line px-1.5 py-0.5 font-mono uppercase tracking-wide">Fixture</span>
-        Intake and the anomaly pipeline migrate to Supabase in phases 2 and 4.
-        This workspace reads live findings now.
+        <span className="rounded-sm border border-c-line px-1.5 py-0.5 font-mono uppercase tracking-wide">Live</span>
+        Intake, anomaly scoring, and ISO classification all run on Supabase.
       </div>
 
       {error && (
@@ -224,8 +270,13 @@ async function SupabaseConsole() {
                   <tr key={f.id} className="border-t border-c-line">
                     <td className="px-3 py-2 tabular text-c-text-2">{f.iso_standard}</td>
                     <td className="px-3 py-2">
-                      {f.iso_mode}
-                      {f.iso_submode ? ` · ${f.iso_submode}` : ""}
+                      <Link
+                        href={`/console/findings/${f.id}`}
+                        className="text-c-text underline decoration-c-line underline-offset-2 hover:decoration-c-focus"
+                      >
+                        {f.iso_mode}
+                        {f.iso_submode ? ` · ${f.iso_submode}` : ""}
+                      </Link>
                     </td>
                     <td className="px-3 py-2">
                       <SeverityChip level={f.severity} />
