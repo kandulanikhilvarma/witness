@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import exifr from "exifr";
 import { randomUUID } from "node:crypto";
+import path from "node:path";
 import { STANDARD, type PartFamily } from "./iso";
 import fs from "node:fs";
 import { StubClassifier, type Classifier, type Features } from "./classifier";
@@ -12,8 +13,11 @@ import { WitnessRecord } from "./schema";
 let cachedClassifier: Classifier | null = null;
 function defaultClassifier(): Classifier {
   if (cachedClassifier) return cachedClassifier;
-  const modelPath = process.env.WITNESS_ONNX_MODEL || "./data/models/model.onnx";
-  cachedClassifier = fs.existsSync(modelPath)
+  // Statically scoped to ./data/models so the bundler doesn't trace the whole
+  // project into the serverless function (see the build-time trace warning).
+  const modelPath =
+    process.env.WITNESS_ONNX_MODEL || path.join(process.cwd(), "data", "models", "model.onnx");
+  cachedClassifier = fs.existsSync(/* turbopackIgnore: true */ modelPath)
     ? new OnnxClassifier(modelPath)
     : new StubClassifier();
   return cachedClassifier;

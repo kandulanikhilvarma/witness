@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
 import { WitnessRecord } from "./schema";
+import { seedIfEmpty } from "./seed";
 
 // Local-first: Postgres runs in-process (PGlite), persisted to ./data/witness.
 // No server, no cloud — the workstation owns its records. A future sync layer
@@ -56,12 +57,24 @@ ALTER TABLE records ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
 // and a second PGlite on the same dir would fight for the lock.
 const g = globalThis as unknown as { __witnessDb?: Promise<PGlite> };
 
+// Where the database lives. Locally it persists under ./data/witness. On a
+// serverless host (Vercel) the filesystem is read-only outside /tmp and the
+// instance is ephemeral, so we run PGlite in memory and seed demo data on boot
+// — the deployed preview is a self-contained demo, not the system of record.
+function dbDir(): string | undefined {
+  if (process.env.WITNESS_DATA_DIR) return process.env.WITNESS_DATA_DIR;
+  if (process.env.VERCEL) return undefined; // in-memory
+  return "./data/witness";
+}
+
 function getDb(): Promise<PGlite> {
   return (g.__witnessDb ??= (async () => {
-    const db = new PGlite("./data/witness");
+    const dir = dbDir();
+    const db = dir ? new PGlite(dir) : new PGlite();
     await db.exec(SCHEMA);
     await db.exec(MIGRATE);
     await db.exec(BACKFILL);
+    await seedIfEmpty(db);
     return db;
   })());
 }
