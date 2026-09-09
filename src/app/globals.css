@@ -1,26 +1,159 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   Witness design system — "Foundry", under ISA-101 discipline.
+
+   Two colour regimes, deliberately different:
+
+   1. MARKETING  full Foundry. Warm, physical, oxide accent carries the brand.
+   2. CONSOLE    ISA-101 High Performance HMI. Low-saturation ground, saturated
+                 colour RESERVED to mean abnormal. Oxide appears at most twice
+                 per screen: the focus ring and the single primary action.
+
+   The split exists because oxide red sits next to critical-severity red. A
+   console that is brand-coloured everywhere has no colour left to shout with.
+   Severity therefore never relies on hue alone — every severity chip pairs the
+   hue with a glyph and a fill pattern, so the signal survives deuteranopia.
+   ========================================================================= */
+
+@theme {
+  /* --- Marketing regime: Foundry ------------------------------------------ */
+  --color-ground: #16130f; /* warm charcoal */
+  --color-ground-2: #211c16; /* raised surface */
+  --color-paper: #ede7dc; /* mill paper */
+  --color-paper-2: #d6cebf; /* secondary text on dark */
+  --color-iron: #8a8378; /* cast-iron grey, borders, meta */
+  --color-oxide: #b4451f; /* brand accent */
+  --color-oxide-deep: #7e2e12; /* pressed, hover */
+  --color-brass: #a9853c; /* secondary accent, rules */
+  --color-verdigris: #4e7a5e; /* tertiary, positive proof */
+
+  /* --- Console regime: ISA-101 -------------------------------------------- */
+  --color-c-ground: #1a1815;
+  --color-c-surface: #232019;
+  --color-c-surface-2: #2c2822;
+  --color-c-line: #3a342c;
+  --color-c-text: #e6e1d7;
+  --color-c-text-2: #9a9287;
+  --color-c-text-3: #6b655c;
+  --color-c-focus: #b4451f; /* focus ring + single primary action ONLY */
+
+  /* --- Severity ramp ------------------------------------------------------
+     Never the sole carrier of meaning. Always paired with a glyph and a fill
+     pattern so the signal survives deuteranopia and protanopia. */
+  --color-sev-0: #5f7a62; /* Serviceable */
+  --color-sev-1: #a9853c; /* Monitor */
+  --color-sev-2: #c97a22; /* Plan repair */
+  --color-sev-3: #c1462a; /* Remove from service */
+  --color-sev-4: #7e1b18; /* Safety-critical */
+
+  /* Muted fills for large areas (chips, table rows) where full saturation
+     would dominate an ISA-101 display. */
+  --color-sev-0-bg: #1e2620;
+  --color-sev-1-bg: #2a2318;
+  --color-sev-2-bg: #2e2114;
+  --color-sev-3-bg: #2e1811;
+  --color-sev-4-bg: #26100f;
+
+  /* --- Typography ---------------------------------------------------------
+     All open-licence (OFL), all self-hosted by next/font at build time.
+     No runtime CDN request. No Inter, no Roboto. */
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-archivo-narrow), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
+  --font-editorial: var(--font-newsreader), ui-serif, Georgia, serif;
+
+  /* Major third, 1.250. */
+  --text-2xs: 0.75rem; /* 12 — meta, table captions */
+  --text-xs: 0.8125rem; /* 13 — mono data */
+  --text-sm: 0.875rem; /* 14 — tables, dense UI */
+  --text-base: 1rem; /* 16 — body */
+  --text-lg: 1.25rem; /* 20 */
+  --text-xl: 1.5625rem; /* 25 */
+  --text-2xl: 1.9375rem; /* 31 */
+  --text-3xl: 2.4375rem; /* 39 */
+  --text-4xl: 3.0625rem; /* 49 */
+  --text-5xl: 3.8125rem; /* 61 */
+
+  /* --- Space: 4px base ---------------------------------------------------- */
+  --spacing: 0.25rem;
+
+  /* --- Motion -------------------------------------------------------------
+     Short. An inspection tool that animates is a tool nobody trusts. */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Console rail width and marketing measure, referenced by the shell grids. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --rail-w: 280px;
+  --shell-max: 1240px;
+  --duration-state: 120ms;
+  --duration-entry: 200ms;
+  --duration-panel: 320ms;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-ground);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Numeric data must align in columns and must never confuse 0 with O. */
+.tabular,
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: "zero" 1;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+/* One visible focus treatment across the whole product. Oxide is spent here. */
+:focus-visible {
+  outline: 2px solid var(--color-c-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: var(--color-oxide);
+  color: var(--color-paper);
+}
+
+/* Blueprint texture. Marketing section breaks only — never in the console. */
+.blueprint-grid {
+  background-image:
+    linear-gradient(var(--color-iron) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-iron) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.04;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

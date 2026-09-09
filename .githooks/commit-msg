@@ -1,0 +1,8 @@
+#!/bin/sh
+# Reject AI attribution trailers. Owner decision, July 2026.
+if grep -qiE '^(Co-Authored-By:.*(Claude|Anthropic|Copilot|GPT)|Claude-Session:|.*Generated with \[?Claude)' "$1"; then
+  echo "commit-msg: AI attribution trailer rejected." >&2
+  grep -inE '^(Co-Authored-By:.*(Claude|Anthropic|Copilot|GPT)|Claude-Session:|.*Generated with \[?Claude)' "$1" >&2
+  exit 1
+fi
+exit 0
