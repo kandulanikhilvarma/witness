@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 interface Result {
@@ -8,6 +9,19 @@ interface Result {
   anomalous: boolean;
   threshold: number;
   heatmap: number[][];
+}
+
+interface Classification {
+  id: string;
+  routed: "auto" | "queued";
+  result: {
+    modeCode: string;
+    modeLabel: string;
+    severity: number;
+    confidence: number;
+    rationale: string;
+    source: string;
+  };
 }
 
 function readAsDataUrl(file: File): Promise<string> {
@@ -26,19 +40,24 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [image, setImage] = useState<string | null>(null);
+  const [classifying, setClassifying] = useState(false);
+  const [classification, setClassification] = useState<Classification | null>(null);
 
   async function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError(null);
     setResult(null);
+    setClassification(null);
     setBusy(true);
     try {
-      const image = await readAsDataUrl(file);
+      const dataUri = await readAsDataUrl(file);
+      setImage(dataUri);
       const res = await fetch("/api/score", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ enrolId, image }),
+        body: JSON.stringify({ enrolId, image: dataUri }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body?.error ?? `Score failed (${res.status}).`);
@@ -47,6 +66,26 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
       setError(err instanceof Error ? err.message : "Score failed.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function classify() {
+    if (!image || !result) return;
+    setError(null);
+    setClassifying(true);
+    try {
+      const res = await fetch("/api/classify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enrolId, image, anomalyScore: result.normalized }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error ?? `Classify failed (${res.status}).`);
+      setClassification(body as Classification);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Classify failed.");
+    } finally {
+      setClassifying(false);
     }
   }
 
@@ -102,6 +141,52 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {result && !classification && (
+        <div className="mt-4 flex items-center gap-3 border-t border-c-line pt-4">
+          <button
+            onClick={classify}
+            disabled={classifying}
+            className="rounded-sm border border-c-line bg-c-surface-2 px-4 py-2 text-sm text-c-text hover:border-c-focus disabled:opacity-50"
+          >
+            {classifying ? "Classifying…" : "Classify to ISO mode"}
+          </button>
+          <span className="text-2xs text-c-text-3">
+            Stage-2 forced-choice → the confidence gate files it or queues it for review.
+          </span>
+        </div>
+      )}
+
+      {classification && (
+        <div className="mt-4 border-t border-c-line pt-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-sm text-c-text">
+              <span className="tabular text-c-text-3">{classification.result.modeCode}</span>{" "}
+              {classification.result.modeLabel}
+            </span>
+            <span
+              className={`rounded-sm border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wide ${
+                classification.routed === "auto"
+                  ? "border-sev-0/40 bg-sev-0-bg text-sev-0"
+                  : "border-sev-1/40 bg-sev-1-bg text-sev-1"
+              }`}
+            >
+              {classification.routed === "auto" ? "auto-filed" : "queued for review"}
+            </span>
+          </div>
+          <p className="mt-1 text-2xs text-c-text-2">
+            severity {classification.result.severity} · confidence{" "}
+            <span className="tabular">{classification.result.confidence.toFixed(2)}</span> ·{" "}
+            {classification.result.source}
+          </p>
+          <p className="mt-1 text-2xs text-c-text-3">{classification.result.rationale}</p>
+          {classification.routed === "queued" && (
+            <Link href="/console/review" className="mt-2 inline-block text-2xs text-c-focus hover:underline">
+              Open review queue →
+            </Link>
+          )}
         </div>
       )}
     </div>

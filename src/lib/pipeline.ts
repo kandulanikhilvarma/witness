@@ -71,7 +71,7 @@ export async function analyzeImage(
   return WitnessRecord.parse(record);
 }
 
-async function extractFeatures(
+export async function extractFeatures(
   buffer: Buffer,
   partFamily: PartFamily,
 ): Promise<Features> {
@@ -119,7 +119,7 @@ async function extractFeatures(
   };
 }
 
-async function makeThumb(buffer: Buffer): Promise<string> {
+export async function makeThumb(buffer: Buffer): Promise<string> {
   const out = await sharp(buffer, { failOn: "none" })
     .resize(240, 240, { fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: 70 })

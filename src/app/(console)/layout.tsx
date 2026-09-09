@@ -46,6 +46,14 @@ export default function ConsoleLayout({
           )}
           {supabaseConfigured && (
             <Link
+              href="/console/review"
+              className="rounded-sm px-3 py-2 text-c-text-2 hover:bg-c-surface-2 hover:text-c-text"
+            >
+              Review
+            </Link>
+          )}
+          {supabaseConfigured && (
+            <Link
               href="/console/insights"
               className="rounded-sm px-3 py-2 text-c-text-2 hover:bg-c-surface-2 hover:text-c-text"
             >
