@@ -55,7 +55,7 @@ async function keylessForcedChoice(buffer: Buffer, family: PartFamily): Promise<
 }
 
 async function openRouterForcedChoice(buffer: Buffer, family: PartFamily): Promise<Stage2Result> {
-  const model = process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-sonnet";
+  const model = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
   const modes = modesFor(family);
   const jpeg = await sharp(buffer, { failOn: "none" }).jpeg({ quality: 80 }).toBuffer();
   const dataUri = `data:image/jpeg;base64,${jpeg.toString("base64")}`;
@@ -86,7 +86,7 @@ async function openRouterForcedChoice(buffer: Buffer, family: PartFamily): Promi
       ],
     }),
   });
-  if (!res.ok) throw new Error(`openrouter ${res.status}`);
+  if (!res.ok) throw new Error(`openrouter ${res.status} (${model}): ${(await res.text()).slice(0, 140)}`);
   const j = await res.json();
   const text: string = j.choices?.[0]?.message?.content ?? "";
   const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
