@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "src/app/globals.css"
+        ],
+        "createdAt": "2026-09-09T21:01:32.373Z",
+        "reason": "Deliberate Foundry blueprint motif on marketing/inspection surface; user confirmed"
+      }
+    ]
+  }
+}
