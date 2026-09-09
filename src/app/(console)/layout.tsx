@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { supabaseConfigured } from "@/lib/supabase/config";
 
 // Console regime: ISA-101. Low-saturation ground, saturated colour reserved for
 // abnormal state. Oxide (--color-c-focus) appears only on the focus ring and
@@ -27,6 +28,14 @@ export default function ConsoleLayout({
           >
             Records
           </Link>
+          {supabaseConfigured && (
+            <Link
+              href="/console/intake"
+              className="rounded-sm px-3 py-2 text-c-text-2 hover:bg-c-surface-2 hover:text-c-text"
+            >
+              Intake
+            </Link>
+          )}
           <Link
             href="/console/batches"
             className="rounded-sm px-3 py-2 text-c-text-2 hover:bg-c-surface-2 hover:text-c-text"
