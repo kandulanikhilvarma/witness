@@ -16,8 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npx tsc --noEmit
-      - run: npm run build
+      - run: npm run build # next build typechecks; generates .next/types (LayoutProps etc.)
       - run: node scripts/check-mermaid.mjs
 
   licences:
