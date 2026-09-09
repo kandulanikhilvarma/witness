@@ -6,6 +6,7 @@ import { supabaseConfigured } from "@/lib/supabase/config";
 import { currentSession } from "@/lib/tenant";
 import { dHash, hamming, DUPE_THRESHOLD } from "@/lib/phash";
 import { scoreProvenance } from "@/lib/provenance";
+import { syncCount } from "@/lib/enrolment";
 
 export const runtime = "nodejs"; // sharp is native
 
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const file = form.get("file");
   const channel = (form.get("channel") as string) || "portal";
+  const enrolmentId = (form.get("enrolment_id") as string) || null;
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No image uploaded." }, { status: 400 });
   }
@@ -85,6 +87,7 @@ export async function POST(request: Request) {
       source_channel: channel,
       near_dupe_of: duplicate ? nearest!.id : null,
       dupe_distance: nearest ? nearest.distance : null,
+      enrolment_id: enrolmentId,
     })
     .select("id")
     .single();
@@ -93,8 +96,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message ?? "Insert failed." }, { status: 500 });
   }
 
+  // A reference upload changes its enrolment's count — keep the mirror honest.
+  if (enrolmentId) await syncCount(enrolmentId);
+
   return NextResponse.json(
-    { id: asset.id, provenance: prov, duplicate, nearest },
+    { id: asset.id, provenance: prov, duplicate, nearest, enrolmentId },
     { status: 201 },
   );
 }

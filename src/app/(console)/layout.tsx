@@ -38,6 +38,14 @@ export default function ConsoleLayout({
           )}
           {supabaseConfigured && (
             <Link
+              href="/console/enrol"
+              className="rounded-sm px-3 py-2 text-c-text-2 hover:bg-c-surface-2 hover:text-c-text"
+            >
+              Enrol
+            </Link>
+          )}
+          {supabaseConfigured && (
+            <Link
               href="/console/insights"
               className="rounded-sm px-3 py-2 text-c-text-2 hover:bg-c-surface-2 hover:text-c-text"
             >
