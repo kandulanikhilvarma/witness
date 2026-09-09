@@ -86,18 +86,30 @@ def _nn_dist(patches: np.ndarray, bank: np.ndarray) -> np.ndarray:
 
 
 def train(images_b64: list[str]) -> dict:
-    feats = np.concatenate([extract_features(_decode(b)) for b in images_b64], axis=0)
+    per_image = [extract_features(_decode(b)) for b in images_b64]
+    feats = np.concatenate(per_image, axis=0)
     mean = feats.mean(axis=0)
     std = feats.std(axis=0)
     std[std < 1e-6] = 1.0
     z = (feats - mean) / std
     bank = z[_coreset(z, BANK_CAP)]
 
-    # Calibrate a threshold from the reference set's own image-level scores: the
-    # highest normal patch distance per image, then a margin above the worst.
-    per_img = np.array(
-        [_nn_dist((extract_features(_decode(b)) - mean) / std, bank).max() for b in images_b64]
-    )
+    # Calibrate the threshold leave-one-image-out: score each reference against a
+    # bank built WITHOUT its own patches. Scoring against the full bank would give
+    # every reference patch a zero-distance self-match (the coreset keeps them
+    # all when the set is small), collapsing the threshold to zero — after which
+    # every subject reads anomalous. LOO measures the real spread of "normal".
+    sizes = [len(p) for p in per_image]
+    bounds = np.cumsum([0, *sizes])
+    per_img_scores = []
+    for i in range(len(per_image)):
+        lo, hi = bounds[i], bounds[i + 1]
+        others = np.delete(z, np.s_[lo:hi], axis=0)
+        if len(others) == 0:
+            continue
+        bank_i = others[_coreset(others, BANK_CAP)]
+        per_img_scores.append(_nn_dist(z[lo:hi], bank_i).max())
+    per_img = np.array(per_img_scores)
     threshold = float(per_img.max() * THRESH_MARGIN) if len(per_img) else 1.0
 
     return {
