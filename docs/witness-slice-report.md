@@ -8,6 +8,10 @@ Stack: Next.js 16.3.4 (App Router, Turbopack), React 19, Tailwind v4, all
 local-first — PGlite runs in-process, persisted to `./data/witness`; nothing
 leaves the workstation.
 
+**Live demo:** <https://witness-kandula.vercel.app> — auto-deployed from
+`master`. On Vercel, PGlite runs in-memory and `src/lib/seed.ts` populates demo
+records on boot, so the console is populated on first open.
+
 ## What this slice delivers
 
 | Area | Files |
@@ -86,8 +90,21 @@ stay on Turbopack (unaffected).
   provenance. Each confirmed record is a `(model suggestion, human label)` pair —
   the training data that unblocks a real diagnostic model.
 
+## Deployment (Vercel)
+
+- `create_git_project` links `kandulanikhilvarma/witness` to the Vercel project
+  `witness`; every push to `master` deploys. Stable alias
+  `witness-kandula.vercel.app`.
+- Serverless FS is read-only outside `/tmp` and instances are ephemeral, so
+  `db.ts` runs PGlite **in-memory** when `process.env.VERCEL` is set and seeds
+  demo data on cold boot. Local installs keep file persistence.
+- `pipeline.ts` scopes the ONNX model path statically (`path.join(process.cwd, …)`
+  + `turbopackIgnore`) so the bundler no longer traces the whole tree into the
+  serverless function. `sharp`, `pglite`, and `onnxruntime-node` stay external.
+
 ## Not yet built
 
 - A trained, diagnostic model. The ONNX path is wired and runs, but with a
   generic ImageNet classifier — labels are placeholder-mapped, not real modes.
+  The review loop collects the labelled pairs that unblock this.
 - Auth, multi-workstation sync, full marketing site.
