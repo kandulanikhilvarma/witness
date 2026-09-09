@@ -32,15 +32,14 @@ export async function currentSession(): Promise<Session | null> {
     };
   }
 
-  // Bootstrap: first sign-in gets a workspace and a membership in it.
+  // Bootstrap: first sign-in gets a workspace and a membership in it. Done in a
+  // SECURITY DEFINER function so both rows land atomically — a fresh tenant has
+  // no membership yet, so a plain insert+return would trip the tenant RLS.
   const name = user.email ? `${user.email.split("@")[0]}'s workspace` : "Demo workspace";
   const { data: tenant, error: te } = await sb
-    .from("tenants")
-    .insert({ name })
-    .select("id, name")
-    .single();
+    .rpc("bootstrap_tenant", { p_name: name })
+    .single<{ id: string; name: string }>();
   if (te || !tenant) return null;
 
-  await sb.from("memberships").insert({ user_id: user.id, tenant_id: tenant.id });
   return { userId: user.id, tenantId: tenant.id, tenantName: tenant.name };
 }
