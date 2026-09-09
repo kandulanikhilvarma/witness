@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { supabaseConfigured } from "@/lib/supabase/config";
 import { currentSession } from "@/lib/tenant";
 import { IntakeForm } from "@/components/intake-form";
+import { SubjectScorer } from "@/components/subject-scorer";
+import { trainEnrolment } from "@/lib/patchcore";
 import { STANDARD, type PartFamily } from "@/lib/iso";
 import {
   MIN_REFERENCE_IMAGES,
@@ -36,6 +38,13 @@ async function addEnrolment(formData: FormData) {
   const id = await createEnrolment(familyId, name);
   revalidatePath("/console/enrol");
   if (id) redirect(`/console/enrol?family=${familyId}&enrol=${id}`);
+}
+
+async function trainCoreset(formData: FormData) {
+  "use server";
+  const id = String(formData.get("enrol_id") ?? "");
+  if (id) await trainEnrolment(id);
+  revalidatePath("/console/enrol");
 }
 
 export default async function EnrolPage({
@@ -194,28 +203,41 @@ export default async function EnrolPage({
               {detail.enrolment.image_count < MIN_REFERENCE_IMAGES && (
                 <p className="mb-4 rounded-sm border border-sev-1/40 bg-sev-1-bg px-3 py-2 text-2xs text-sev-1">
                   {MIN_REFERENCE_IMAGES}+ images make a stable normal-set. This set
-                  has {detail.enrolment.image_count}. Training refuses below the
-                  floor.
+                  has {detail.enrolment.image_count} — you can train now, but treat
+                  results as indicative until the set fills out.
                 </p>
               )}
 
               <IntakeForm enrolmentId={detail.enrolment.id} />
 
-              <div className="mt-4 flex items-center gap-3">
-                <button
-                  disabled
-                  title="Coreset training arrives in Phase 4 pass 2"
-                  className="rounded-sm border border-c-line bg-c-surface px-4 py-2 text-sm text-c-text-3 opacity-60"
-                >
-                  Train coreset
-                </button>
-                <span className="rounded-sm border border-c-line px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wide text-c-text-3">
-                  Pass 2
-                </span>
-                <span className="text-2xs text-c-text-3">
-                  PatchCore training + scoring lands next.
-                </span>
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <form action={trainCoreset}>
+                  <input type="hidden" name="enrol_id" value={detail.enrolment.id} />
+                  <button
+                    disabled={detail.enrolment.image_count < 1}
+                    className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-paper disabled:opacity-50"
+                  >
+                    {detail.enrolment.status === "ready" ? "Retrain coreset" : "Train coreset"}
+                  </button>
+                </form>
+                {detail.enrolment.status === "ready" && detail.enrolment.trained_at && (
+                  <span className="text-2xs text-c-text-3">
+                    Trained {new Date(detail.enrolment.trained_at).toLocaleString()}
+                    {detail.enrolment.metrics?.n_bank
+                      ? ` · bank ${detail.enrolment.metrics.n_bank} patches, threshold ${(detail.enrolment.metrics.ref_score_max ?? 0).toFixed(2)}`
+                      : ""}
+                  </span>
+                )}
+                {detail.enrolment.status === "failed" && (
+                  <span className="text-2xs text-sev-3">Training failed — try again.</span>
+                )}
               </div>
+
+              {detail.enrolment.status === "ready" && (
+                <div className="mt-4">
+                  <SubjectScorer enrolId={detail.enrolment.id} />
+                </div>
+              )}
 
               <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-5">
                 {detail.refs.map((r) => (

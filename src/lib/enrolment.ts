@@ -26,6 +26,7 @@ export interface Enrolment {
   image_count: number;
   coreset_uri: string | null;
   trained_at: string | null;
+  metrics: Record<string, number> | null;
   created_at: string;
 }
 
@@ -70,7 +71,7 @@ export async function listEnrolments(familyId: string): Promise<Enrolment[]> {
   const sb = await supabaseServer();
   const { data } = await sb
     .from("enrolments")
-    .select("id, part_family_id, name, status, image_count, coreset_uri, trained_at, created_at")
+    .select("id, part_family_id, name, status, image_count, coreset_uri, trained_at, metrics, created_at")
     .eq("part_family_id", familyId)
     .order("created_at", { ascending: false });
   return (data ?? []) as Enrolment[];
@@ -92,7 +93,7 @@ export async function enrolmentDetail(
   const sb = await supabaseServer();
   const { data: e } = await sb
     .from("enrolments")
-    .select("id, part_family_id, name, status, image_count, coreset_uri, trained_at, created_at")
+    .select("id, part_family_id, name, status, image_count, coreset_uri, trained_at, metrics, created_at")
     .eq("id", enrolId)
     .single();
   if (!e) return null;
