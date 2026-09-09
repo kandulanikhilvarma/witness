@@ -1,0 +1,4 @@
+# Dev/CI Python deps. Runtime inference deps are pinned separately in the
+# Stage 1 function (phase 4).
+pyyaml==6.0.2
+ruff==0.14.0

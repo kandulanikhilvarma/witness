@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use Witness, please cite it as below."
+title: "Witness — defect intelligence for rotating equipment"
+authors:
+  - family-names: Kandula
+    given-names: Nikhilvarma
+repository-code: "https://github.com/kandulanikhilvarma/witness"
+url: "https://witness-kandula.vercel.app"
+license: Apache-2.0
+version: 0.1.0
+date-released: "2026-09-09"
+keywords:
+  - anomaly-detection
+  - ISO-15243
+  - ISO-10825
+  - condition-monitoring
+  - PatchCore

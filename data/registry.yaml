@@ -1,0 +1,81 @@
+# Witness dataset licence register.
+#
+# The single source of truth for which datasets may touch a training run.
+# scripts/check-licences.py parses this in CI and FAILS the build if any
+# training config references a dataset whose role is not `train`.
+#
+# role:
+#   train      commercial use verified permissive — may train shipped weights
+#   eval-only  may be used to measure, never to train
+#   cite-only  may be named/linked, no derivatives (e.g. CC BY-NC-ND)
+#   excluded   non-commercial licence — must not enter the product at all
+#   quarantined terms unverified — no use until cleared in writing
+#
+# verified: ISO date the licence was last checked against the source.
+
+version: 1
+verified_on: "2026-09-09"
+
+datasets:
+  - name: VisA
+    url: https://github.com/amazon-science/spot-diff
+    licence: CC BY 4.0
+    commercial: true
+    role: train
+    verified: "2026-09-09"
+    note: Amazon Science spot-diff. Permissive with attribution.
+
+  - name: BSData
+    url: https://github.com/2Obe/BSData
+    licence: CC BY 4.0
+    commercial: true
+    role: train
+    verified: "2026-09-09"
+    note: >-
+      KIT ball-screw pitting with pixel masks. On-domain: pitting is an
+      ISO 15243 and ISO 10825 mode.
+
+  - name: MVTec AD
+    url: https://www.mvtec.com/company/research/datasets/mvtec-ad
+    licence: CC BY-NC-SA 4.0
+    commercial: false
+    role: excluded
+    verified: "2026-09-09"
+    note: Non-commercial. Also covers LOCO, AD2, 3D-AD.
+
+  - name: KolektorSDD2
+    url: https://www.vicos.si/resources/kolektorsdd2/
+    licence: CC BY-NC-SA 4.0
+    commercial: false
+    role: excluded
+    verified: "2026-09-09"
+
+  - name: WTBD wind blade
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12996307/
+    licence: CC BY-NC-ND 4.0
+    commercial: false
+    role: cite-only
+    verified: "2026-09-09"
+    note: No-derivatives arguably blocks even a trained weight file.
+
+  - name: MPDD
+    url: https://github.com/stepanje/MPDD
+    licence: unstated
+    commercial: null
+    role: quarantined
+    verified: "2026-09-09"
+    note: Licence not stated in repo. Authors contacted.
+
+  - name: Severstal
+    url: https://www.kaggle.com/competitions/severstal-steel-defect-detection
+    licence: Kaggle competition terms
+    commercial: null
+    role: quarantined
+    verified: "2026-09-09"
+
+  - name: NEU-DET
+    url: http://faculty.neu.edu.cn/songkechen/zh_CN/zhym/263269/list/
+    licence: unclear
+    commercial: null
+    role: quarantined
+    verified: "2026-09-09"

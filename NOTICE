@@ -1,0 +1,17 @@
+Witness
+Copyright 2026 Nikhilvarma Kandula
+
+This product includes software developed as part of the following
+open-source projects. Their licences are reproduced with their source.
+
+- Anomalib (Apache License 2.0)
+  https://github.com/open-edge-platform/anomalib
+  Stage 1 anomaly detection (PatchCore) is built on Anomalib.
+
+- timm — PyTorch Image Models (Apache License 2.0)
+  https://github.com/huggingface/pytorch-image-models
+  Backbone feature extractors for the PatchCore memory bank.
+
+EfficientAD and GCAD are deliberately NOT used. MVTec Software GmbH states
+these methods fall within the scope of their patent and discourages use of
+open-source implementations. See README, "Model transparency".
