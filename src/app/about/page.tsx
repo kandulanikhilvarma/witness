@@ -165,51 +165,112 @@ export default function AboutPage() {
           </ol>
         </Block>
 
-        <Block title="Who makes Witness">
-          <p>
-            Witness is built by{" "}
-            <a
-              href="https://kandula.studio"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rule-link text-oxide"
-            >
-              Nikhilvarma Kandula
-            </a>
-            , a founder and AI engineer based in Germany who builds data systems
-            and, lately, products. The work behind this tool follows five
-            operating rules, and the tool inherits all of them.
-          </p>
-          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-            {PRINCIPLES.map((p, i) => (
-              <li
-                key={p.t}
-                className="reveal rounded-md border border-iron/20 bg-ground p-5"
-                style={stagger(i)}
-              >
-                <span className="font-mono text-2xs tabular text-oxide">{`0${i + 1}`}</span>
-                <h3 className="mt-2 font-display text-base">{p.t}</h3>
-                <p className="mt-1.5 text-sm leading-6 text-paper-2">{p.d}</p>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-6 border-l-2 border-brass/50 pl-4 font-editorial text-lg italic leading-8 text-paper-2">
-            &ldquo;The best data work is invisible. The pipeline nobody notices
-            because it never breaks.&rdquo;
-          </p>
-          <p className="mt-4 text-sm leading-6 text-paper-2">
-            More work, writing, and verified credentials live at{" "}
-            <a
-              href="https://kandula.studio/about"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rule-link text-oxide"
-            >
-              kandula.studio/about
-            </a>
-            .
-          </p>
-        </Block>
+        {/* Maker about, in the manner of kandula.studio. */}
+        <section className="space-y-10 border-t border-iron/15 pt-12">
+          <div>
+            <p className="font-mono text-2xs uppercase tracking-[0.28em] text-brass">
+              The person behind it
+            </p>
+            <p className="mt-4 font-editorial text-2xl italic leading-snug text-paper">
+              &ldquo;I build the thing, then I ship it.&rdquo;
+            </p>
+            <div className="mt-4 space-y-4 text-base leading-7 text-paper-2">
+              <p>
+                That is the whole method. Prototypes are cheap and plentiful.
+                What is rare is a system that survives contact with real data,
+                real users and real failure modes, which is why Witness is built
+                around gates that fail loudly rather than dashboards that look
+                reassuring.
+              </p>
+              <p>
+                The confidence gate marks an unsure record unconfirmed rather
+                than filing it. A set of design invariants breaks the build when
+                a known defect returns. Where a claim is not earned, the model
+                card says so. That posture is not modesty. It is what makes the
+                claims that are made worth anything.
+              </p>
+            </div>
+          </div>
+
+          <Numbered n="01" title="Background">
+            <p>
+              Eighteen months in US fintech, rebuilding monolithic systems into
+              event-driven services carrying more than 500 concurrent users, and
+              moving from data engineer to lead developer over that stretch. The
+              habits in this app come from there: idempotent decisions, logged
+              propensities, and the assumption that anything unlogged did not
+              happen.
+            </p>
+            <p>
+              Currently reading for an M.Sc. in Big Data and Business Analytics
+              at FOM Hochschule, alongside peer-reviewed research on rainfall
+              estimation through data fusion, published in IRJMETS in March 2025.
+            </p>
+            <dl className="mt-6 grid gap-x-8 gap-y-3 border-t border-iron/15 pt-6 sm:grid-cols-[9rem_1fr]">
+              {META.map(([k, v]) => (
+                <div key={k} className="contents">
+                  <dt className="font-mono text-2xs uppercase tracking-[0.16em] text-iron">{k}</dt>
+                  <dd className="text-sm leading-6 text-paper">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </Numbered>
+
+          <Numbered n="02" title="Other things that are live">
+            <p>Each of these is running, not a screenshot in a deck.</p>
+            <ul className="mt-2 grid gap-3 sm:grid-cols-2">
+              {PROJECTS.map(([name, blurb]) => (
+                <li key={name} className="lift rounded-md border border-iron/20 bg-ground p-5">
+                  <h3 className="font-display text-base">{name}</h3>
+                  <p className="mt-1.5 text-sm leading-6 text-paper-2">{blurb}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1 text-sm">
+              See all of it at{" "}
+              <a href="https://kandula.studio" target="_blank" rel="noopener noreferrer" className="rule-link text-oxide">
+                kandula.studio
+              </a>
+              .
+            </p>
+          </Numbered>
+
+          <Numbered n="03" title="Why this one is called Witness">
+            <p>
+              In metrology a witness mark is the trace one surface leaves on
+              another: the fret, the brinell dent, the scored flank that records
+              a contact that already happened. It is physical evidence, read
+              after the fact.
+            </p>
+            <p>
+              That is the whole product. The part cannot tell you what went
+              wrong, but the marks on it can, if someone reads them against a
+              standard. Witness turns those marks into a record with a clause
+              number and a cause, so the evidence outlives the part.
+            </p>
+            <p>
+              The wordmark is the same idea reduced: a bearing ring with one
+              rolling element marked, the single element the eye should reach
+              first.
+            </p>
+          </Numbered>
+
+          <Numbered n="04" title="Get in touch">
+            <p>
+              Questions about the system, the evidence behind it, or working
+              together.
+            </p>
+            <ul className="mt-1 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              {CONTACT.map(([label, href]) => (
+                <li key={label}>
+                  <a href={href} target="_blank" rel="noopener noreferrer" className="rule-link text-oxide">
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Numbered>
+        </section>
 
         <section className="rounded-md border border-iron/20 bg-ground-2 p-7">
           <h2 className="font-display text-2xl">See it run</h2>
@@ -280,24 +341,39 @@ const ROADMAP = [
   },
 ];
 
-const PRINCIPLES = [
-  {
-    t: "Define the metric first",
-    d: "You cannot improve what you have not defined. The confidence gate has a visible threshold for exactly this reason.",
-  },
-  {
-    t: "Know when not to trust a model",
-    d: "A model that hides its uncertainty is dangerous. Witness marks an unsure record as unconfirmed and hands it to a person.",
-  },
-  {
-    t: "Publish the null result",
-    d: "What a tool cannot do belongs in plain sight. The model card states the current limits in full, not only the wins.",
-  },
-  {
-    t: "Ship with the trade-offs written down",
-    d: "A working product beats a paper. It ships with its assumptions attached so the next person can check them.",
-  },
+const META: [string, string][] = [
+  ["Role", "Founder and AI engineer"],
+  ["Focus", "AI and LLM products, full-stack engineering, data engineering, event-driven architecture"],
+  ["Based", "Germany and India"],
+  ["Study", "M.Sc. Big Data and Business Analytics, FOM Hochschule, through August 2027"],
+  ["Research", "Rainfall estimation via data fusion, IRJMETS, March 2025"],
+  ["Open to", "Data, software and AI engineering roles"],
 ];
+
+const PROJECTS: [string, string][] = [
+  ["Bud", "A habit tracker built on game mechanics, local-first so it works with no account and no network."],
+  ["Cartwise", "Turns a photographed receipt into a nutrition summary using OCR and product matching."],
+  ["FirstChair", "Monitors how law firms are represented by AI assistants across ChatGPT, Gemini and Perplexity."],
+  ["Knock", "A local services booking platform built to handle users competing for the same slot without double-booking it."],
+];
+
+const CONTACT: [string, string][] = [
+  ["GitHub", "https://github.com/kandulanikhilvarma"],
+  ["kandula.studio", "https://kandula.studio"],
+  ["Source for this system", "https://github.com/kandulanikhilvarma/witness"],
+];
+
+function Numbered({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+  return (
+    <div className="border-t border-iron/15 pt-8">
+      <div className="flex items-baseline gap-4">
+        <span className="font-mono text-sm tabular text-oxide">{n}</span>
+        <h2 className="font-display text-2xl">{title}</h2>
+      </div>
+      <div className="mt-4 space-y-4 text-base leading-7 text-paper-2">{children}</div>
+    </div>
+  );
+}
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
