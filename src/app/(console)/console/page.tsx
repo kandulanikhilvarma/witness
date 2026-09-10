@@ -57,11 +57,21 @@ export default async function ConsolePage({
         )}
       </header>
 
+      <HmiBar
+        attention={st.atRisk > 0}
+        fields={[
+          ["records", st.total],
+          ["confirmed", `${st.reviewed}/${st.total}`],
+          ["queue", st.unreviewed],
+          ["mode", "local demo"],
+        ]}
+      />
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Records" value={st.total} />
-        <Stat label="Confirmed" value={st.reviewed} />
-        <Stat label="Unconfirmed" value={st.unreviewed} />
-        <Stat label="Severity ≥ 3" value={st.atRisk} alert={st.atRisk > 0} />
+        <Stat label="Confirmed" value={st.reviewed} of={st.total} glyph="●" />
+        <Stat label="Unconfirmed" value={st.unreviewed} of={st.total} glyph="○" />
+        <Stat label="Severity ≥ 3" value={st.atRisk} of={st.total} alert={st.atRisk > 0} glyph="▲" />
       </div>
 
       <div className="mt-6">
@@ -201,12 +211,36 @@ async function SupabaseConsole() {
         </div>
       </header>
 
+      <HmiBar
+        attention={atRisk > 0}
+        fields={[
+          ["workspace", session.tenantName],
+          ["findings", total],
+          ["confirmed", `${reviewed}/${total}`],
+          ["pipeline", "live"],
+        ]}
+      />
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Findings" value={total} />
-        <Stat label="Confirmed" value={reviewed} />
-        <Stat label="Unconfirmed" value={total - reviewed} />
-        <Stat label="Severity ≥ 3" value={atRisk} alert={atRisk > 0} />
+        <Stat label="Confirmed" value={reviewed} of={total} glyph="●" />
+        <Stat label="Unconfirmed" value={total - reviewed} of={total} glyph="○" />
+        <Stat label="Severity ≥ 3" value={atRisk} of={total} alert={atRisk > 0} glyph="▲" />
       </div>
+
+      {total > 0 && (
+        <div className="mt-3 rounded-sm border border-c-line bg-c-surface px-4 py-3">
+          <div className="flex items-center justify-between text-2xs uppercase tracking-wide text-c-text-3">
+            <span>Review progress</span>
+            <span className="tabular text-c-text-2">
+              {reviewed}/{total} confirmed
+            </span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-sm bg-c-surface-2">
+            <div className="h-full bg-c-text-3" style={{ width: `${total ? (reviewed / total) * 100 : 0}%` }} />
+          </div>
+        </div>
+      )}
 
       {total > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -215,7 +249,8 @@ async function SupabaseConsole() {
             <div className="space-y-1.5">
               {sevCounts.map((n, lv) => (
                 <div key={lv} className="flex items-center gap-2 text-2xs">
-                  <span className={`w-4 tabular ${SEV_TEXT[lv]}`}>{lv}</span>
+                  <span aria-hidden className={`w-3 text-center ${SEV_TEXT[lv]}`}>{SEVERITY[lv].glyph}</span>
+                  <span className={`w-3 tabular ${SEV_TEXT[lv]}`}>{lv}</span>
                   <div className="h-3 flex-1 overflow-hidden rounded-sm bg-c-surface-2">
                     <div
                       className={SEV_BG_SOLID[lv]}
@@ -223,19 +258,25 @@ async function SupabaseConsole() {
                     />
                   </div>
                   <span className="w-6 text-right tabular text-c-text-2">{n}</span>
+                  <span className="w-9 text-right tabular text-c-text-3">{total ? Math.round((n / total) * 100) : 0}%</span>
                 </div>
               ))}
             </div>
           </section>
           <section className="rounded-sm border border-c-line bg-c-surface p-4">
             <h2 className="mb-3 text-2xs uppercase tracking-wide text-c-text-3">Top failure modes</h2>
-            <ul className="space-y-1.5 text-sm">
+            <ul className="space-y-2 text-sm">
               {topModes.map(([code, { std, n }]) => (
-                <li key={code} className="flex items-center justify-between gap-2">
-                  <span className="text-c-text-2">
-                    <span className="tabular text-c-text-3">{code}</span> {modeLabel(std, code)}
-                  </span>
-                  <span className="tabular text-c-text">{n}</span>
+                <li key={code}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-c-text-2">
+                      <span className="tabular text-c-text-3">{code}</span> {modeLabel(std, code)}
+                    </span>
+                    <span className="tabular text-c-text">{n}</span>
+                  </div>
+                  <div className="mt-1 h-1 overflow-hidden rounded-sm bg-c-surface-2">
+                    <div className="h-full bg-c-text-3" style={{ width: `${(n / (topModes[0]?.[1].n || 1)) * 100}%` }} />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -307,20 +348,62 @@ async function SupabaseConsole() {
 function Stat({
   label,
   value,
+  of,
   alert = false,
+  glyph,
 }: {
   label: string;
   value: number;
+  of?: number;
   alert?: boolean;
+  glyph?: string;
 }) {
+  const pct = of && of > 0 ? Math.round((value / of) * 100) : null;
   return (
     <div className="rounded-sm border border-c-line bg-c-surface px-4 py-3">
-      <div className="text-2xs uppercase tracking-wide text-c-text-3">{label}</div>
-      <div
-        className={`mt-1 font-display text-2xl tabular ${alert ? "text-sev-3" : "text-c-text"}`}
-      >
-        {value}
+      <div className="flex items-center justify-between">
+        <span className="text-2xs uppercase tracking-wide text-c-text-3">{label}</span>
+        {glyph && (
+          <span aria-hidden className={`text-xs leading-none ${alert ? "text-sev-3" : "text-c-text-3"}`}>
+            {glyph}
+          </span>
+        )}
       </div>
+      <div className={`mt-1 font-display text-2xl tabular ${alert ? "text-sev-3" : "text-c-text"}`}>{value}</div>
+      {pct !== null && (
+        <>
+          <div className="mt-2 h-1 overflow-hidden rounded-sm bg-c-surface-2">
+            <div className={alert ? "bg-sev-3" : "bg-c-text-3"} style={{ width: `${pct}%`, height: "100%" }} />
+          </div>
+          <div className="mt-1 text-2xs tabular text-c-text-3">
+            {pct}% of {of}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// A thin HMI status strip: a nominal/attention lamp, then a row of readouts.
+// Neutral by default; the lamp turns to the severity colour only when a
+// safety-relevant count is non-zero.
+function HmiBar({ fields, attention }: { fields: [string, string | number][]; attention: boolean }) {
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-sm border border-c-line bg-c-surface px-4 py-2.5 font-mono text-2xs">
+      <span className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className="h-2 w-2 rounded-full"
+          style={{ background: attention ? "var(--color-sev-3)" : "var(--color-verdigris)" }}
+        />
+        <span className="uppercase tracking-[0.15em] text-c-text-2">{attention ? "attention" : "nominal"}</span>
+      </span>
+      {fields.map(([k, v]) => (
+        <span key={k} className="flex items-center gap-1.5">
+          <span className="uppercase tracking-wide text-c-text-3">{k}</span>
+          <span className="tabular text-c-text">{v}</span>
+        </span>
+      ))}
     </div>
   );
 }
