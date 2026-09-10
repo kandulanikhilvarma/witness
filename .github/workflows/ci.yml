@@ -29,3 +29,31 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check scripts
       - run: python scripts/check-licences.py
+
+  # Keep the README figures in sync with the drawing geometry. On every push to
+  # master this regenerates docs/assets from src/lib/mech.ts and commits the
+  # result only when it changed. The commit uses GITHUB_TOKEN, whose pushes do
+  # not start new workflow runs, so there is no loop; the [skip ci] tag is a
+  # second guard. gen-diagrams.ts needs Node 22 for TypeScript type stripping.
+  diagrams:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/gen-diagrams.ts
+      - name: Commit regenerated figures if they changed
+        run: |
+          if [ -n "$(git status --porcelain docs/assets)" ]; then
+            git config user.name "witness-ci"
+            git config user.email "ci@users.noreply.github.com"
+            git add docs/assets
+            git commit -m "Regenerate README figures [skip ci]"
+            git push
+          else
+            echo "figures already in sync"
+          fi
