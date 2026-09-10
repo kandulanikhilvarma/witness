@@ -1,32 +1,37 @@
 import type { Metadata } from "next";
 import {
-  Bricolage_Grotesque,
-  Archivo_Narrow,
+  Space_Grotesk,
+  Archivo,
   JetBrains_Mono,
-  Newsreader,
+  Fraunces,
 } from "next/font/google";
 import "./globals.css";
 
 // next/font downloads and self-hosts these at build time. The browser never
 // requests a font CDN. All four are OFL.
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+
+// Display. Space Grotesk carries the drawing-office character the product wants
+// — squared terminals, a single-storey g, tight apertures — without the novelty
+// that would date a tool meant to be read every shift.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["500", "600", "700"],
   display: "swap",
 });
 
-const archivoNarrow = Archivo_Narrow({
-  variable: "--font-archivo-narrow",
+// Body. Archivo is a grotesque drawn for high performance at small sizes, which
+// is the whole job here: dense tables, long clause names, a bench light that is
+// never as good as the design studio's.
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-// Substituted for Commit Mono, which is OFL but not distributed via Google
-// Fonts. JetBrains Mono keeps the type stack on one mechanism and satisfies the
-// requirement that actually matters here: unambiguous 0/O and 1/l/I in batch
-// codes and ISO clause numbers.
+// Data. The requirement that actually matters: unambiguous 0/O and 1/l/I in
+// batch codes, part numbers, and ISO clause numbers.
 const jetbrains = JetBrains_Mono({
   variable: "--font-jetbrains",
   subsets: ["latin"],
@@ -34,11 +39,13 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+// Editorial. Used only for pull quotes and the standards commentary, where the
+// page stops being an interface and starts being a document.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
   style: ["normal", "italic"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -57,7 +64,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${bricolage.variable} ${archivoNarrow.variable} ${jetbrains.variable} ${newsreader.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${archivo.variable} ${jetbrains.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

@@ -1,67 +1,78 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   Witness design system — "Foundry", under ISA-101 discipline.
+   Witness design system — "Works", a light metrology-bench identity.
 
-   Two colour regimes, deliberately different:
+   The product reads damage off returned parts and files it against a standard.
+   The interface should feel like the bench it serves: warm paper, dark ink,
+   one calm instrument colour. Two colour regimes, deliberately different:
 
-   1. MARKETING  full Foundry. Warm, physical, oxide accent carries the brand.
-   2. CONSOLE    ISA-101 High Performance HMI. Low-saturation ground, saturated
-                 colour RESERVED to mean abnormal. Oxide appears at most twice
-                 per screen: the focus ring and the single primary action.
+   1. MARKETING  warm paper ground. Gauge-teal accent carries the brand.
+   2. CONSOLE    ISA-101 High Performance HMI, light variant. Near-neutral grey
+                 ground, saturated colour RESERVED to mean abnormal. The accent
+                 appears at most twice per screen: the focus ring and the single
+                 primary action.
 
-   The split exists because oxide red sits next to critical-severity red. A
-   console that is brand-coloured everywhere has no colour left to shout with.
-   Severity therefore never relies on hue alone — every severity chip pairs the
-   hue with a glyph and a fill pattern, so the signal survives deuteranopia.
+   The accent is a cool gauge-teal, NOT red or amber. That is a requirement, not
+   a preference: the severity ramp runs green → amber → orange → red, so the
+   brand colour must sit off that ramp or severity has no colour left to shout
+   with. Severity therefore never relies on hue alone — every severity chip
+   pairs the hue with a glyph and a fill pattern, so the signal survives
+   deuteranopia and a greyscale print.
+
+   Light mode only. No dark theme. `color-scheme: light`.
+   Token NAMES are stable across the codebase; only their values changed when
+   the product moved from the dark "Foundry" identity to this light one.
    ========================================================================= */
 
 @theme {
-  /* --- Marketing regime: Foundry ------------------------------------------ */
-  --color-ground: #16130f; /* warm charcoal */
-  --color-ground-2: #211c16; /* raised surface */
-  --color-paper: #ede7dc; /* mill paper */
-  --color-paper-2: #d6cebf; /* secondary text on dark */
-  --color-iron: #8a8378; /* cast-iron grey, borders, meta */
-  --color-oxide: #b4451f; /* brand accent */
-  --color-oxide-deep: #7e2e12; /* pressed, hover */
-  --color-brass: #a9853c; /* secondary accent, rules */
-  --color-verdigris: #4e7a5e; /* tertiary, positive proof */
+  /* --- Marketing regime: warm paper --------------------------------------- */
+  --color-ground: #f6f2ea; /* warm mill paper, page ground */
+  --color-ground-2: #ffffff; /* raised card / panel surface */
+  --color-paper: #1d1b17; /* primary ink (text on the warm ground) */
+  --color-paper-2: #544e45; /* secondary ink, supporting copy */
+  --color-iron: #6e675d; /* cast-iron grey: meta, rules, faint borders */
+  --color-oxide: #0e6e78; /* brand accent — gauge teal (off the severity ramp) */
+  --color-oxide-deep: #0a5158; /* pressed / hover */
+  --color-on-accent: #ffffff; /* text and glyphs that sit on the accent */
+  --color-brass: #8a6d25; /* secondary accent, kickers, rules */
+  --color-verdigris: #2f6f52; /* tertiary, positive proof */
 
-  /* --- Console regime: ISA-101 -------------------------------------------- */
-  --color-c-ground: #1a1815;
-  --color-c-surface: #232019;
-  --color-c-surface-2: #2c2822;
-  --color-c-line: #3a342c;
-  --color-c-text: #e6e1d7;
-  --color-c-text-2: #9a9287;
-  --color-c-text-3: #6b655c;
-  --color-c-focus: #b4451f; /* focus ring + single primary action ONLY */
+  /* --- Console regime: ISA-101, light ------------------------------------- */
+  --color-c-ground: #eceae4; /* near-neutral warm grey HMI ground */
+  --color-c-surface: #ffffff;
+  --color-c-surface-2: #f3f1eb;
+  --color-c-line: #d9d5cc;
+  --color-c-text: #23201b;
+  --color-c-text-2: #5c564c;
+  --color-c-text-3: #8a8377;
+  --color-c-focus: #0e6e78; /* focus ring + single primary action ONLY */
 
   /* --- Severity ramp ------------------------------------------------------
      Never the sole carrier of meaning. Always paired with a glyph and a fill
-     pattern so the signal survives deuteranopia and protanopia. */
-  --color-sev-0: #5f7a62; /* Serviceable */
-  --color-sev-1: #a9853c; /* Monitor */
-  --color-sev-2: #c97a22; /* Plan repair */
-  --color-sev-3: #c1462a; /* Remove from service */
-  --color-sev-4: #7e1b18; /* Safety-critical */
+     pattern so the signal survives deuteranopia and protanopia. Hues darkened
+     for AA contrast on warm paper. */
+  --color-sev-0: #3f7a4e; /* Serviceable */
+  --color-sev-1: #96761c; /* Monitor */
+  --color-sev-2: #bd660f; /* Plan repair */
+  --color-sev-3: #bf341d; /* Remove from service */
+  --color-sev-4: #8a1410; /* Safety-critical */
 
-  /* Muted fills for large areas (chips, table rows) where full saturation
-     would dominate an ISA-101 display. */
-  --color-sev-0-bg: #1e2620;
-  --color-sev-1-bg: #2a2318;
-  --color-sev-2-bg: #2e2114;
-  --color-sev-3-bg: #2e1811;
-  --color-sev-4-bg: #26100f;
+  /* Light tints for large areas (chips, table rows) where full saturation
+     would dominate the display. */
+  --color-sev-0-bg: #e7efe6;
+  --color-sev-1-bg: #f4edd7;
+  --color-sev-2-bg: #f7e7d1;
+  --color-sev-3-bg: #f7ddd5;
+  --color-sev-4-bg: #f2d3ce;
 
   /* --- Typography ---------------------------------------------------------
      All open-licence (OFL), all self-hosted by next/font at build time.
      No runtime CDN request. No Inter, no Roboto. */
-  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-archivo-narrow), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
-  --font-editorial: var(--font-newsreader), ui-serif, Georgia, serif;
+  --font-editorial: var(--font-fraunces), ui-serif, Georgia, serif;
 
   /* Major third, 1.250. */
   --text-2xs: 0.75rem; /* 12 — meta, table captions */
@@ -79,21 +90,27 @@
   --spacing: 0.25rem;
 
   /* --- Motion -------------------------------------------------------------
-     Short. An inspection tool that animates is a tool nobody trusts. */
+     Short. An inspection tool that animates too much is a tool nobody trusts. */
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* Console rail width and marketing measure, referenced by the shell grids. */
+/* Console rail width, marketing measure, shadows and durations — referenced by
+   the shell grids and the hover utilities below. */
 :root {
   --rail-w: 280px;
   --shell-max: 1240px;
   --duration-state: 120ms;
-  --duration-entry: 200ms;
+  --duration-entry: 220ms;
   --duration-panel: 320ms;
+
+  /* Paper-depth shadows. Warm, low, never a hard drop. */
+  --shadow-raise: 0 1px 2px rgba(29, 27, 23, 0.05), 0 2px 8px rgba(29, 27, 23, 0.05);
+  --shadow-lift: 0 2px 4px rgba(29, 27, 23, 0.06), 0 12px 28px rgba(29, 27, 23, 0.1);
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -121,12 +138,12 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.015em;
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
 }
 
-/* One visible focus treatment across the whole product. Oxide is spent here. */
+/* One visible focus treatment across the whole product. The accent is spent here. */
 :focus-visible {
   outline: 2px solid var(--color-c-focus);
   outline-offset: 2px;
@@ -134,8 +151,52 @@ h3 {
 }
 
 ::selection {
-  background: var(--color-oxide);
+  background: color-mix(in srgb, var(--color-oxide) 22%, transparent);
   color: var(--color-paper);
+}
+
+/* --- Hover and entrance utilities ----------------------------------------
+   Declared once so every surface moves the same way. The console does NOT use
+   .lift; the bench stays still. */
+
+/* A card that rises a hair on hover. Warm shadow, short ease. */
+.lift {
+  transition:
+    transform var(--duration-state) var(--ease-out-quart),
+    box-shadow var(--duration-state) var(--ease-out-quart),
+    border-color var(--duration-state) var(--ease-out-quart);
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+}
+
+/* A link or control whose underline grows from the left on hover. */
+.rule-link {
+  background-image: linear-gradient(var(--color-oxide), var(--color-oxide));
+  background-size: 0% 2px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size var(--duration-state) var(--ease-out-quart);
+}
+.rule-link:hover {
+  background-size: 100% 2px;
+}
+
+/* Staggered entrance for a section's children. Driven by a --i index var. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.reveal {
+  animation: rise-in var(--duration-entry) var(--ease-out-quart) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
 }
 
 /* Blueprint texture. Marketing section breaks only — never in the console. */
@@ -144,41 +205,82 @@ h3 {
     linear-gradient(var(--color-iron) 1px, transparent 1px),
     linear-gradient(90deg, var(--color-iron) 1px, transparent 1px);
   background-size: 32px 32px;
-  opacity: 0.04;
+  opacity: 0.05;
 }
 
-/* Marketing-only motion. A slow scan line sweeping the blueprint, and a pulse
-   travelling the pipeline diagram. Console never uses either. */
+/* Marketing-only motion. A slow scan line sweeping the hero, and a pulse
+   travelling the pipeline diagram. The console never uses either. */
 @keyframes scan-sweep {
-  0% { transform: translateY(-10%); opacity: 0; }
-  12% { opacity: 0.7; }
-  88% { opacity: 0.7; }
-  100% { transform: translateY(110%); opacity: 0; }
+  0% {
+    transform: translateY(-10%);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.6;
+  }
+  86% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(110%);
+    opacity: 0;
+  }
 }
 .scan-line {
   position: absolute;
   inset-inline: 0;
-  height: 140px;
+  height: 160px;
   background: linear-gradient(
     to bottom,
     transparent,
-    color-mix(in srgb, var(--color-oxide) 22%, transparent),
+    color-mix(in srgb, var(--color-oxide) 14%, transparent),
     transparent
   );
-  animation: scan-sweep 7s var(--ease-out-expo) infinite;
+  animation: scan-sweep 8s var(--ease-out-expo) infinite;
 }
 @keyframes flow-dash {
-  to { stroke-dashoffset: -24; }
+  to {
+    stroke-dashoffset: -24;
+  }
 }
 .flow-path {
   stroke-dasharray: 4 8;
-  animation: flow-dash 1.1s linear infinite;
+  animation: flow-dash 1.2s linear infinite;
 }
 @keyframes node-breathe {
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
-.flow-node { animation: node-breathe 3.4s ease-in-out infinite; }
+.flow-node {
+  animation: node-breathe 3.6s ease-in-out infinite;
+}
+
+/* A slow rotation for the mechanical hero marks (bearing cage, gear mesh). */
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes spin-slow-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+.spin-slow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin-slow 26s linear infinite;
+}
+.spin-slow-rev {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin-slow-rev 26s linear infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,

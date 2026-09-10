@@ -65,7 +65,7 @@ export default function Login() {
       <button
         onClick={demo}
         disabled={busy}
-        className="mt-8 rounded-full bg-oxide px-6 py-3 text-base font-medium text-paper transition-colors hover:bg-oxide-deep disabled:opacity-50"
+        className="mt-8 rounded-sm bg-oxide px-6 py-3 text-base font-medium text-on-accent transition-colors hover:bg-oxide-deep disabled:opacity-50"
       >
         {busy ? "Opening…" : "Enter the demo workspace"}
       </button>
