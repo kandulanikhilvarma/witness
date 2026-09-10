@@ -69,7 +69,8 @@
   /* --- Typography ---------------------------------------------------------
      All open-licence (OFL), all self-hosted by next/font at build time.
      No runtime CDN request. No Inter, no Roboto. */
-  --font-display: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-metamorphous), ui-serif, Georgia, serif;
+  --font-figure: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-cabin), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
   --font-editorial: var(--font-fraunces), ui-serif, Georgia, serif;
@@ -138,9 +139,9 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  font-weight: 400; /* Metamorphous ships one weight; hierarchy is by size */
+  line-height: 1.12;
+  letter-spacing: -0.01em;
 }
 
 /* One visible focus treatment across the whole product. The accent is spent here. */

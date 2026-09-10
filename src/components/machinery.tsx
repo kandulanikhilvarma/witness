@@ -1,4 +1,8 @@
 import { bearing, polar, hexPath, boltCircle, springPath } from "@/lib/mech";
+import { MechDefs } from "@/components/mechanical";
+
+const STEEL_G = "url(#mech-steel)";
+const BALL_G = "url(#mech-ball)";
 
 // A catalogue of machinery drawings and hardware-styled panels, in the manner
 // of an industrial parts catalogue: dense, dimensioned, part-numbered. Server
@@ -9,7 +13,6 @@ const LINE = "var(--color-iron)";
 const INK = "var(--color-paper)";
 const META = "var(--color-iron)";
 const ACCENT = "var(--color-oxide)";
-const STEEL = "color-mix(in srgb, var(--color-iron) 12%, transparent)";
 const STEEL_2 = "color-mix(in srgb, var(--color-iron) 20%, transparent)";
 
 /* --------------------------------------------------------------------------
@@ -58,12 +61,13 @@ export function ExplodedBearing({ className = "" }: { className?: string }) {
       role="img"
       aria-label="Exploded assembly drawing of a deep-groove ball bearing, showing the outer race, the cage, the rolling elements and the inner race spread along the shaft axis, numbered one to four."
     >
+      <MechDefs />
       {/* Assembly axis through every part. */}
       <line x1="60" y1={cy} x2="600" y2={cy} stroke={LINE} strokeWidth="1" strokeDasharray="14 4 3 4" opacity="0.5" />
 
       {/* 1 · Outer race */}
       <g>
-        <circle cx={cols[0]} cy={cy} r="74" fill={STEEL} stroke={LINE} strokeWidth="1.5" />
+        <circle cx={cols[0]} cy={cy} r="74" fill={STEEL_G} stroke={INK} strokeWidth="1.5" />
         <circle cx={cols[0]} cy={cy} r="60" fill="var(--color-ground-2)" stroke={LINE} strokeWidth="1.25" />
       </g>
 
@@ -80,13 +84,13 @@ export function ExplodedBearing({ className = "" }: { className?: string }) {
       <g>
         <circle cx={cols[2]} cy={cy} r={g.ballOrbit} fill="none" stroke={ACCENT} strokeWidth="1" strokeDasharray="5 6" opacity="0.6" />
         {boltCircle(cols[2], cy, g.ballOrbit, 9).map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="9" fill={i === 0 ? ACCENT : "var(--color-ground-2)"} stroke={LINE} strokeWidth="1.25" />
+          <circle key={i} cx={p.x} cy={p.y} r="9" fill={i === 0 ? ACCENT : BALL_G} stroke={INK} strokeWidth="1.25" />
         ))}
       </g>
 
       {/* 4 · Inner race on the shaft */}
       <g>
-        <circle cx={cols[3]} cy={cy} r="44" fill={STEEL} stroke={LINE} strokeWidth="1.5" />
+        <circle cx={cols[3]} cy={cy} r="44" fill={STEEL_G} stroke={INK} strokeWidth="1.5" />
         <circle cx={cols[3]} cy={cy} r="26" fill="var(--color-ground)" stroke={LINE} strokeWidth="1.25" />
         <path d={`M ${cols[3] - 6} ${cy - 26} h 12 M ${cols[3] - 6} ${cy + 26} h 12`} stroke={LINE} strokeWidth="1" />
       </g>
@@ -98,7 +102,7 @@ export function ExplodedBearing({ className = "" }: { className?: string }) {
           <text x={cols[i]} y="252" fontSize="12" fill={INK} textAnchor="middle" fontFamily="var(--font-mono)" fontWeight="600">
             {p.n}
           </text>
-          <text x={cols[i]} y="278" fontSize="11.5" fill={INK} textAnchor="middle" fontFamily="var(--font-display)" fontWeight="600">
+          <text x={cols[i]} y="278" fontSize="11.5" fill={INK} textAnchor="middle" fontFamily="var(--font-figure)" fontWeight="600">
             {p.label}
           </text>
           <text x={cols[i]} y="292" fontSize="10" fill={META} textAnchor="middle" fontFamily="var(--font-mono)">
@@ -130,11 +134,12 @@ function PlateDrawing({ kind }: { kind: Drawing }) {
   const cy = h / 2;
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-full w-full" aria-hidden>
+      <MechDefs />
       {kind === "bolt" && (
         <g fill="none" stroke={LINE} strokeWidth="1.25">
-          <path d={hexPath(48, cy, 26)} fill={STEEL} />
+          <path d={hexPath(48, cy, 26)} fill={STEEL_G} />
           <circle cx="48" cy={cy} r="12" />
-          <rect x="74" y={cy - 9} width="70" height="18" fill={STEEL} />
+          <rect x="74" y={cy - 9} width="70" height="18" fill={STEEL_G} />
           {Array.from({ length: 7 }).map((_, i) => (
             <path key={i} d={`M ${80 + i * 10} ${cy - 9} l 5 18`} strokeWidth="0.75" opacity="0.7" />
           ))}
@@ -143,7 +148,7 @@ function PlateDrawing({ kind }: { kind: Drawing }) {
       )}
       {kind === "shaft" && (
         <g fill="none" stroke={LINE} strokeWidth="1.25">
-          <rect x="26" y={cy - 22} width="40" height="44" fill={STEEL} />
+          <rect x="26" y={cy - 22} width="40" height="44" fill={STEEL_G} />
           <rect x="66" y={cy - 14} width="76" height="28" fill={STEEL_2} />
           <line x1="26" y1={cy} x2="150" y2={cy} strokeDasharray="12 3 2 3" opacity="0.5" />
           <Dim x0={66} x1={142} y={cy + 34} value="Ø 20 h6" />
@@ -159,7 +164,7 @@ function PlateDrawing({ kind }: { kind: Drawing }) {
       )}
       {kind === "flange" && (
         <g fill="none" stroke={LINE} strokeWidth="1.25">
-          <circle cx={cx} cy={cy} r="46" fill={STEEL} />
+          <circle cx={cx} cy={cy} r="46" fill={STEEL_G} />
           <circle cx={cx} cy={cy} r="18" fill="var(--color-ground-2)" />
           {boltCircle(cx, cy, 34, 6).map((p, i) => (
             <circle key={i} cx={p.x} cy={p.y} r="4.5" fill="var(--color-ground-2)" />
@@ -255,7 +260,7 @@ export function GaugeDial({
       })}
       <line x1={cx} y1={cy} x2={needle.x} y2={needle.y} stroke={INK} strokeWidth="2" strokeLinecap="round" />
       <circle cx={cx} cy={cy} r="5" fill={INK} />
-      <text x={cx} y={cy + 34} textAnchor="middle" fontSize="26" fill={INK} fontFamily="var(--font-display)" fontWeight="700" className="tabular">
+      <text x={cx} y={cy + 34} textAnchor="middle" fontSize="26" fill={INK} fontFamily="var(--font-figure)" fontWeight="700" className="tabular">
         {display}
       </text>
       <text x={cx} y={cy + 50} textAnchor="middle" fontSize="10" fill={META} fontFamily="var(--font-mono)" className="uppercase" letterSpacing="1">

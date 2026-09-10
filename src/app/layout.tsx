@@ -1,13 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Jost, Cabin, JetBrains_Mono, Fraunces } from "next/font/google";
+import { Metamorphous, Jost, Cabin, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 
 // next/font downloads and self-hosts these at build time. The browser never
-// requests a font CDN. All four are OFL.
+// requests a font CDN. All are OFL.
 
-// Display. Jost is a geometric sans in the Futura/Kabel line: circular bowls,
-// a high waist, near-monoline strokes. It carries the catalogue-plate character
-// the product wants without novelty that would date a tool read every shift.
+// Display. Metamorphous is an engraved, high-contrast display face: pointed
+// serifs and a stamped, nameplate character. It carries the brand headings and
+// the wordmark. It is a single weight, so hierarchy comes from size, not weight.
+const metamorphous = Metamorphous({
+  variable: "--font-metamorphous",
+  subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
+});
+
+// Technical labels. Jost is a geometric sans in the Futura/Kabel line: circular
+// bowls, near-monoline strokes. It labels the drawings and gauges, where the
+// display face would be too ornate to read at small sizes.
 const jost = Jost({
   variable: "--font-jost",
   subsets: ["latin"],
@@ -142,7 +152,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${jost.variable} ${cabin.variable} ${jetbrains.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${metamorphous.variable} ${jost.variable} ${cabin.variable} ${jetbrains.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <script

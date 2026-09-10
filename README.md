@@ -87,6 +87,16 @@ depends on the mechanism. The same pit can come from fatigue at end of life.
 The same pit can also come from a contaminant dent that started it early. The
 batch-level action is different in each case.
 
+### Inside the assembly
+
+<p align="center">
+  <img src="docs/assets/fig-exploded.svg" alt="Exploded assembly of a deep-groove ball bearing: the outer race, the cage, the rolling elements, and the inner race spread along the shaft axis, numbered one to four." width="100%">
+</p>
+
+Witness reads the parts drawn above. The rolling elements and the two races
+carry the ISO 15243 damage. The cage and the shaft seat set how the load runs
+through them.
+
 ---
 
 ## The workflow

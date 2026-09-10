@@ -9,7 +9,33 @@ const LINE = "var(--color-iron)";
 const INK = "var(--color-paper)";
 const META = "var(--color-iron)";
 const ACCENT = "var(--color-oxide)";
-const STEEL = "color-mix(in srgb, var(--color-iron) 12%, transparent)";
+
+// Shared paint. A vertical steel gradient for machined faces, a spherical
+// gradient for rolling elements, and a section hatch for cut surfaces. Inlined
+// per figure; identical IDs across figures resolve to the first definition,
+// which is harmless because every definition is the same.
+export function MechDefs() {
+  return (
+    <defs>
+      <linearGradient id="mech-steel" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="var(--color-ground-2)" />
+        <stop offset="0.5" stopColor="color-mix(in srgb, var(--color-iron) 12%, var(--color-ground-2))" />
+        <stop offset="1" stopColor="color-mix(in srgb, var(--color-iron) 30%, var(--color-ground-2))" />
+      </linearGradient>
+      <radialGradient id="mech-ball" cx="0.34" cy="0.3" r="0.8">
+        <stop offset="0" stopColor="var(--color-ground-2)" />
+        <stop offset="0.65" stopColor="color-mix(in srgb, var(--color-iron) 16%, var(--color-ground-2))" />
+        <stop offset="1" stopColor="color-mix(in srgb, var(--color-iron) 44%, var(--color-ground-2))" />
+      </radialGradient>
+      <pattern id="mech-hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="0" x2="0" y2="6" stroke="var(--color-iron)" strokeWidth="0.6" opacity="0.5" />
+      </pattern>
+    </defs>
+  );
+}
+
+const STEEL_FILL = "url(#mech-steel)";
+const BALL_FILL = "url(#mech-ball)";
 
 /* --------------------------------------------------------------------------
    Deep-groove ball bearing, face-on. Classified against ISO 15243.
@@ -54,6 +80,7 @@ export function BearingFigure({ className = "" }: { className?: string }) {
       role="img"
       aria-label="Cutaway drawing of a deep-groove ball bearing. Callouts mark the outer raceway, the rolling elements, the inner raceway and the bore, each labelled with the ISO 15243 damage classes that appear there."
     >
+      <MechDefs />
       <g fill="none" stroke={LINE} strokeWidth="1">
         {/* Centre lines, the drawing-office convention for an axis of revolution. */}
         <path
@@ -64,8 +91,8 @@ export function BearingFigure({ className = "" }: { className?: string }) {
       </g>
 
       {/* Races. Filled as annuli so the bore reads as a hole, not a disc. */}
-      <path d={g.outerRace} fillRule="evenodd" fill={STEEL} stroke={LINE} strokeWidth="1.25" />
-      <path d={g.innerRace} fillRule="evenodd" fill={STEEL} stroke={LINE} strokeWidth="1.25" />
+      <path d={g.outerRace} fillRule="evenodd" fill={STEEL_FILL} stroke={INK} strokeWidth="1.25" />
+      <path d={g.innerRace} fillRule="evenodd" fill={STEEL_FILL} stroke={INK} strokeWidth="1.25" />
 
       {/* Cage pitch circle, then the rolling elements riding on it. */}
       <circle
@@ -85,8 +112,8 @@ export function BearingFigure({ className = "" }: { className?: string }) {
             cx={p.x}
             cy={p.y}
             r={g.ballRadius}
-            fill="var(--color-ground-2)"
-            stroke={LINE}
+            fill={BALL_FILL}
+            stroke={INK}
             strokeWidth="1.25"
           />
         ))}
@@ -103,7 +130,7 @@ export function BearingFigure({ className = "" }: { className?: string }) {
               y={c.to.y - 3}
               fontSize="13"
               fill={INK}
-              fontFamily="var(--font-display)"
+              fontFamily="var(--font-figure)"
               fontWeight="600"
             >
               {c.label}
@@ -167,6 +194,7 @@ export function GearMeshFigure({ className = "" }: { className?: string }) {
       role="img"
       aria-label="Drawing of a spur wheel driving a smaller pinion. Callouts mark the tooth flank, the tooth root and the mesh contact line, each labelled with the ISO 10825 damage classes that appear there."
     >
+      <MechDefs />
       <g fill="none" stroke={LINE} strokeWidth="1" opacity="0.45">
         <path d={`M 24 ${wheel.cy} H 536`} strokeDasharray="14 4 3 4" />
         <path d={`M ${wheel.cx} 30 V 306`} strokeDasharray="14 4 3 4" />
@@ -200,8 +228,8 @@ export function GearMeshFigure({ className = "" }: { className?: string }) {
       <g className="spin-slow" style={{ transformOrigin: `${wheel.cx}px ${wheel.cy}px` }}>
         <path
           d={gearPath({ ...wheel, phase: 0 })}
-          fill={STEEL}
-          stroke={LINE}
+          fill={STEEL_FILL}
+          stroke={INK}
           strokeWidth="1.25"
         />
         <circle cx={wheel.cx} cy={wheel.cy} r="26" fill="var(--color-ground)" stroke={LINE} strokeWidth="1.25" />
@@ -211,8 +239,8 @@ export function GearMeshFigure({ className = "" }: { className?: string }) {
       <g className="spin-slow-rev" style={{ transformOrigin: `${pinion.cx}px ${pinion.cy}px` }}>
         <path
           d={gearPath({ ...pinion, phase: meshPhase(pinion.teeth) })}
-          fill={STEEL}
-          stroke={LINE}
+          fill={STEEL_FILL}
+          stroke={INK}
           strokeWidth="1.25"
         />
         <circle cx={pinion.cx} cy={pinion.cy} r="20" fill="var(--color-ground)" stroke={LINE} strokeWidth="1.25" />
@@ -229,7 +257,7 @@ export function GearMeshFigure({ className = "" }: { className?: string }) {
               y={c.to.y - 4}
               fontSize="13"
               fill={INK}
-              fontFamily="var(--font-display)"
+              fontFamily="var(--font-figure)"
               fontWeight="600"
               textAnchor="middle"
             >
@@ -257,161 +285,175 @@ export function GearMeshFigure({ className = "" }: { className?: string }) {
 }
 
 /* --------------------------------------------------------------------------
-   The workflow, drawn. Seven stages and one branch: the confidence gate is the
-   only place the system decides whether a person is needed.
+   The workflow as a machine. Four process modules ride a driven rail into a
+   confidence gate valve. The two outputs converge on the fleet cube. The rail
+   flow animates; the console never does.
    -------------------------------------------------------------------------- */
 
-const STAGES = [
-  { t: "Photograph", s: "bench camera" },
-  { t: "Intake", s: "EXIF · pHash" },
-  { t: "Anomaly", s: "PatchCore" },
-  { t: "ISO mode", s: "forced choice" },
-  { t: "Gate", s: "confidence" },
+type StageIcon = "camera" | "intake" | "grid" | "dial";
+
+const STAGES: { t: string; s: string; icon: StageIcon }[] = [
+  { t: "Photograph", s: "bench camera", icon: "camera" },
+  { t: "Intake", s: "EXIF · pHash", icon: "intake" },
+  { t: "Anomaly", s: "PatchCore", icon: "grid" },
+  { t: "ISO mode", s: "forced choice", icon: "dial" },
 ];
 
-export function WorkflowFigure({ className = "" }: { className?: string }) {
-  const y = 96;
-  const x0 = 76;
-  const span = 700;
-  const step = span / (STAGES.length - 1);
+function StageGlyph({ icon }: { icon: StageIcon }) {
+  const s = {
+    fill: "none",
+    stroke: INK,
+    strokeWidth: 1.6,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  if (icon === "camera")
+    return (
+      <g>
+        <rect x={-13} y={-8} width={26} height={17} rx={2.5} {...s} />
+        <rect x={-11} y={-12} width={9} height={5} rx={1.5} fill={INK} stroke="none" />
+        <circle cx={0} cy={1} r={5.5} {...s} />
+      </g>
+    );
+  if (icon === "intake")
+    return (
+      <g>
+        <path d="M -8 -12 h 11 l 5 5 v 19 h -16 Z" {...s} />
+        <path d="M 3 -12 v 5 h 5" {...s} />
+        <path d="M -4 -1 h 8 M -4 4 h 8 M -4 9 h 5" stroke={META} strokeWidth={1.2} />
+      </g>
+    );
+  if (icon === "grid")
+    return (
+      <g>
+        {[-9, 0, 9].map((gx) =>
+          [-9, 0, 9].map((gy) => {
+            const hot = gx === 0 && gy === 0;
+            return <circle key={`${gx},${gy}`} cx={gx} cy={gy} r={hot ? 3 : 2.1} fill={hot ? ACCENT : META} />;
+          }),
+        )}
+      </g>
+    );
+  return (
+    <g>
+      <path d="M -12 5 A 12 12 0 0 1 12 5" {...s} />
+      <line x1={0} y1={5} x2={7} y2={-6} stroke={ACCENT} strokeWidth={1.8} strokeLinecap="round" />
+      <circle cx={0} cy={5} r={2.4} fill={INK} />
+    </g>
+  );
+}
 
-  const gateX = x0 + step * 4;
-  const autoY = 40;
-  const reviewY = 156;
-  const outX = gateX + 150;
+export function WorkflowFigure({ className = "" }: { className?: string }) {
+  const y = 116;
+  const cardW = 118;
+  const cardTop = 68;
+  const cardH = 96;
+  const xs = [60, 208, 356, 504];
+
+  const gx = 690;
+  const autoY = 58;
+  const reviewY = 182;
+  const outL = 762;
+  const outW = 152;
+  const outR = outL + outW;
+  const cubeX = 956;
+
+  const rail = (x1: number, x2: number, key: string) => (
+    <g key={key}>
+      <line x1={x1} y1={y} x2={x2} y2={y} stroke={META} strokeWidth={3} opacity={0.35} strokeLinecap="round" />
+      <line x1={x1} y1={y} x2={x2} y2={y} className="flow-path" stroke={ACCENT} strokeWidth={2} />
+    </g>
+  );
 
   return (
     <svg
-      viewBox="0 0 1000 240"
+      viewBox="0 0 1000 248"
       className={className}
       role="img"
-      aria-label="Workflow diagram. A photograph passes through intake, anomaly detection, ISO mode selection, and a confidence gate. High confidence files automatically; low confidence goes to an inspector for review. Both routes end in the fleet insights cube."
+      aria-label="The workflow drawn as a machine. Four modules, photograph, intake, anomaly detection and ISO mode selection, ride a driven rail into a confidence gate valve. High confidence files automatically; low confidence routes to an inspector. Both outputs converge on the fleet insights cube."
     >
-      {/* Trunk: photograph through the gate. */}
-      <line x1={x0} y1={y} x2={gateX} y2={y} stroke={LINE} strokeWidth="1" opacity="0.4" />
-      <line x1={x0} y1={y} x2={gateX} y2={y} className="flow-path" stroke={ACCENT} strokeWidth="2" />
+      <MechDefs />
 
-      {/* Branch: the gate splits into auto-file and review. */}
-      <path
-        d={`M ${gateX} ${y} C ${gateX + 46} ${y}, ${gateX + 46} ${autoY}, ${gateX + 96} ${autoY}`}
-        fill="none"
-        stroke={ACCENT}
-        strokeWidth="1.5"
-        opacity="0.8"
-      />
-      <path
-        d={`M ${gateX} ${y} C ${gateX + 46} ${y}, ${gateX + 46} ${reviewY}, ${gateX + 96} ${reviewY}`}
-        fill="none"
-        stroke={ACCENT}
-        strokeWidth="1.5"
-        opacity="0.8"
-      />
+      {rail(36, xs[0], "inlet")}
+      {rail(xs[0] + cardW, xs[1], "s1")}
+      {rail(xs[1] + cardW, xs[2], "s2")}
+      {rail(xs[2] + cardW, xs[3], "s3")}
+      {rail(xs[3] + cardW, gx - 22, "s4")}
 
       {STAGES.map((st, i) => {
-        const x = x0 + i * step;
+        const x = xs[i];
+        const cx = x + cardW / 2;
+        const bolts = [
+          [x + 9, cardTop + 9],
+          [x + cardW - 9, cardTop + 9],
+          [x + 9, cardTop + cardH - 9],
+          [x + cardW - 9, cardTop + cardH - 9],
+        ];
         return (
           <g key={st.t}>
-            <circle
-              cx={x}
-              cy={y}
-              r="7"
-              className="flow-node"
-              fill={ACCENT}
-              style={{ animationDelay: `${i * 0.4}s` }}
-            />
-            <circle cx={x} cy={y} r="14" fill="none" stroke={LINE} strokeWidth="1" opacity="0.5" />
-            <text
-              x={x}
-              y={y - 30}
-              textAnchor="middle"
-              fontSize="15"
-              fill={INK}
-              fontFamily="var(--font-display)"
-              fontWeight="600"
-            >
+            <rect x={x} y={cardTop} width={cardW} height={cardH} rx={8} fill={STEEL_FILL} stroke={INK} strokeWidth={1.25} />
+            <rect x={x + 4} y={cardTop + 4} width={cardW - 8} height={15} rx={4} fill={ACCENT} opacity={0.14} />
+            <text x={x + 10} y={cardTop + 15} fontSize={9} fill={META} fontFamily="var(--font-mono)">{`0${i + 1}`}</text>
+            {bolts.map(([bx, by], j) => (
+              <circle key={j} cx={bx} cy={by} r={2.2} fill="none" stroke={META} strokeWidth={1} />
+            ))}
+            <g transform={`translate(${cx}, ${cardTop + 46})`}>
+              <StageGlyph icon={st.icon} />
+            </g>
+            <text x={cx} y={cardTop + 74} textAnchor="middle" fontSize={13.5} fill={INK} fontFamily="var(--font-figure)" fontWeight="600">
               {st.t}
             </text>
-            <text
-              x={x}
-              y={y + 40}
-              textAnchor="middle"
-              fontSize="11"
-              fill={META}
-              fontFamily="var(--font-mono)"
-            >
+            <text x={cx} y={cardTop + 89} textAnchor="middle" fontSize={10} fill={META} fontFamily="var(--font-mono)">
               {st.s}
             </text>
           </g>
         );
       })}
 
-      {/* The two outcomes. */}
+      {/* Confidence gate, drawn as a gate valve. */}
       <g>
-        <rect
-          x={outX - 54}
-          y={autoY - 17}
-          width="152"
-          height="34"
-          rx="3"
-          fill="var(--color-ground-2)"
-          stroke={LINE}
-          strokeWidth="1"
-        />
-        <text x={outX + 22} y={autoY + 5} textAnchor="middle" fontSize="13" fill={INK} fontFamily="var(--font-sans)">
-          Files automatically
+        <path d={`M ${gx - 22} ${y - 16} L ${gx} ${y} L ${gx - 22} ${y + 16} Z`} fill={STEEL_FILL} stroke={INK} strokeWidth={1.25} />
+        <path d={`M ${gx + 22} ${y - 16} L ${gx} ${y} L ${gx + 22} ${y + 16} Z`} fill={STEEL_FILL} stroke={INK} strokeWidth={1.25} />
+        <line x1={gx} y1={y - 16} x2={gx} y2={y - 32} stroke={INK} strokeWidth={1.6} />
+        <path d={`M ${gx - 9} ${y - 34} h 18`} stroke={INK} strokeWidth={2.4} strokeLinecap="round" />
+        <circle cx={gx} cy={y} r={3.2} className="flow-node" fill={ACCENT} />
+        <text x={gx} y={cardTop + 74} textAnchor="middle" fontSize={13.5} fill={INK} fontFamily="var(--font-figure)" fontWeight="600">
+          Gate
         </text>
-
-        <rect
-          x={outX - 54}
-          y={reviewY - 17}
-          width="152"
-          height="34"
-          rx="3"
-          fill="var(--color-ground-2)"
-          stroke={ACCENT}
-          strokeWidth="1.25"
-        />
-        <text x={outX + 22} y={reviewY + 5} textAnchor="middle" fontSize="13" fill={INK} fontFamily="var(--font-sans)">
-          Inspector reviews
+        <text x={gx} y={cardTop + 89} textAnchor="middle" fontSize={10} fill={META} fontFamily="var(--font-mono)">
+          confidence
         </text>
       </g>
 
-      {/* Both outcomes converge on the fleet cube. */}
-      <path
-        d={`M ${outX + 98} ${autoY} C ${outX + 140} ${autoY}, ${outX + 140} ${y}, ${outX + 176} ${y}`}
-        fill="none"
-        stroke={LINE}
-        strokeWidth="1.25"
-        opacity="0.7"
-      />
-      <path
-        d={`M ${outX + 98} ${reviewY} C ${outX + 140} ${reviewY}, ${outX + 140} ${y}, ${outX + 176} ${y}`}
-        fill="none"
-        stroke={LINE}
-        strokeWidth="1.25"
-        opacity="0.7"
-      />
-      <circle cx={outX + 182} cy={y} r="7" fill={ACCENT} />
-      <text
-        x={outX + 182}
-        y={y - 26}
-        textAnchor="middle"
-        fontSize="15"
-        fill={INK}
-        fontFamily="var(--font-display)"
-        fontWeight="600"
-      >
+      {/* Branch pipes from the valve to the two outputs. */}
+      <path d={`M ${gx + 22} ${y} C ${gx + 64} ${y}, ${gx + 64} ${autoY}, ${outL} ${autoY}`} fill="none" stroke={ACCENT} strokeWidth={1.75} />
+      <path d={`M ${gx + 22} ${y} C ${gx + 64} ${y}, ${gx + 64} ${reviewY}, ${outL} ${reviewY}`} fill="none" stroke={ACCENT} strokeWidth={1.75} />
+
+      {/* Outputs. */}
+      <rect x={outL} y={autoY - 17} width={outW} height={34} rx={4} fill="var(--color-ground-2)" stroke={INK} strokeWidth={1} />
+      <text x={outL + outW / 2} y={autoY + 5} textAnchor="middle" fontSize={12.5} fill={INK} fontFamily="var(--font-sans)">
+        Files automatically
+      </text>
+      <rect x={outL} y={reviewY - 17} width={outW} height={34} rx={4} fill="var(--color-ground-2)" stroke={ACCENT} strokeWidth={1.5} />
+      <text x={outL + outW / 2} y={reviewY + 5} textAnchor="middle" fontSize={12.5} fill={INK} fontFamily="var(--font-sans)">
+        Inspector reviews
+      </text>
+
+      {/* Converge on the fleet cube, drawn isometric. */}
+      <path d={`M ${outR} ${autoY} C ${outR + 30} ${autoY}, ${cubeX - 26} ${y}, ${cubeX - 20} ${y}`} fill="none" stroke={META} strokeWidth={1.25} opacity={0.7} />
+      <path d={`M ${outR} ${reviewY} C ${outR + 30} ${reviewY}, ${cubeX - 26} ${y}, ${cubeX - 20} ${y}`} fill="none" stroke={META} strokeWidth={1.25} opacity={0.7} />
+      <path d={`M ${cubeX} ${y - 22} L ${cubeX + 19} ${y - 11} L ${cubeX} ${y} L ${cubeX - 19} ${y - 11} Z`} fill={ACCENT} stroke={INK} strokeWidth={1} />
+      <path d={`M ${cubeX - 19} ${y - 11} L ${cubeX} ${y} L ${cubeX} ${y + 22} L ${cubeX - 19} ${y + 11} Z`} fill={STEEL_FILL} stroke={INK} strokeWidth={1} />
+      <path d={`M ${cubeX + 19} ${y - 11} L ${cubeX} ${y} L ${cubeX} ${y + 22} L ${cubeX + 19} ${y + 11} Z`} fill="color-mix(in srgb, var(--color-iron) 24%, var(--color-ground-2))" stroke={INK} strokeWidth={1} />
+      <text x={cubeX} y={cardTop - 6} textAnchor="middle" fontSize={13.5} fill={INK} fontFamily="var(--font-figure)" fontWeight="600">
         Insight
       </text>
-      <text
-        x={outX + 182}
-        y={y + 34}
-        textAnchor="middle"
-        fontSize="11"
-        fill={META}
-        fontFamily="var(--font-mono)"
-      >
+      <text x={cubeX} y={y + 38} textAnchor="middle" fontSize={10} fill={META} fontFamily="var(--font-mono)">
         fleet cube
+      </text>
+
+      <text x={36} y={236} fontSize={10.5} fill={META} fontFamily="var(--font-mono)">
+        SCHEMATIC · PHOTOGRAPH TO FINDING
       </text>
     </svg>
   );
