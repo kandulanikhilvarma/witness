@@ -358,6 +358,7 @@ const PROJECTS: [string, string][] = [
 ];
 
 const CONTACT: [string, string][] = [
+  ["Email", "mailto:kandulanikhilvarma@gmail.com"],
   ["GitHub", "https://github.com/kandulanikhilvarma"],
   ["kandula.studio", "https://kandula.studio"],
   ["Source for this system", "https://github.com/kandulanikhilvarma/witness"],
