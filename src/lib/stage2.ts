@@ -49,7 +49,7 @@ async function keylessForcedChoice(buffer: Buffer, family: PartFamily): Promise<
     modeLabel: c.modeLabel,
     severity: c.severity,
     confidence: c.confidence,
-    rationale: `Keyless heuristic over surface texture (edge density ${feats.edgeDensity.toFixed(2)}, contrast ${feats.contrast.toFixed(0)}). Deterministic, not a trained vision model — set OPENROUTER_API_KEY to route this through a VLM.`,
+    rationale: `Keyless heuristic over surface texture (edge density ${feats.edgeDensity.toFixed(2)}, contrast ${feats.contrast.toFixed(0)}). Deterministic, not a trained vision model. Set OPENROUTER_API_KEY to route this through a VLM.`,
     source: "keyless-stub",
   };
 }
@@ -61,7 +61,7 @@ async function openRouterForcedChoice(buffer: Buffer, family: PartFamily): Promi
   const dataUri = `data:image/jpeg;base64,${jpeg.toString("base64")}`;
   const list = modes.map((m) => `${m.code} = ${m.label}`).join("; ");
 
-  const system = `You are a reliability engineer classifying ${family} damage under ${STANDARD[family]}. Choose exactly one failure mode from the given list — never a code outside it. Respond with ONLY compact JSON: {"mode_code": "<code>", "severity": <0-4>, "confidence": <0-1>, "rationale": "<one sentence>"}. Severity: 0 serviceable, 2 plan repair, 3 remove from service, 4 safety-critical. If unsure, still choose, and lower the confidence.`;
+  const system = `You are a reliability engineer classifying ${family} damage under ${STANDARD[family]}. Choose exactly one failure mode from the given list. Never a code outside it. Respond with ONLY compact JSON: {"mode_code": "<code>", "severity": <0-4>, "confidence": <0-1>, "rationale": "<one sentence>"}. Severity: 0 serviceable, 2 plan repair, 3 remove from service, 4 safety-critical. If unsure, still choose, and lower the confidence.`;
   const user = `Failure modes: ${list}. Classify the damage in this photograph.`;
 
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {

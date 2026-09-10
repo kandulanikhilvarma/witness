@@ -71,18 +71,18 @@ export default async function BatchesPage() {
                     </Link>
                   </td>
                   <td className="px-3 py-2 capitalize text-c-text-2">
-                    {b.partFamily ?? "—"}
+                    {b.partFamily ?? "n/a"}
                   </td>
                   <td className="px-3 py-2 tabular text-c-text-2">
-                    {b.producedOn ?? "—"}
+                    {b.producedOn ?? "n/a"}
                   </td>
-                  <td className="px-3 py-2 text-c-text-2">{b.line ?? "—"}</td>
+                  <td className="px-3 py-2 text-c-text-2">{b.line ?? "n/a"}</td>
                   <td className="px-3 py-2 tabular text-c-text-2">{b.parts}</td>
                   <td className="px-3 py-2">
-                    {b.parts > 0 ? <SeverityChip level={b.worstSeverity} /> : "—"}
+                    {b.parts > 0 ? <SeverityChip level={b.worstSeverity} /> : "n/a"}
                   </td>
                   <td className="px-3 py-2 tabular text-2xs text-c-text-3">
-                    {b.lastSeen ? new Date(b.lastSeen).toLocaleString() : "—"}
+                    {b.lastSeen ? new Date(b.lastSeen).toLocaleString() : "n/a"}
                   </td>
                 </tr>
               ))}
@@ -143,16 +143,16 @@ async function SupabaseBatches() {
               {batches.map((b) => (
                 <tr key={b.id} className="border-t border-c-line">
                   <td className="px-3 py-2 tabular text-c-text">{b.batch_code}</td>
-                  <td className="px-3 py-2 text-c-text-2">{b.supplier ?? "—"}</td>
-                  <td className="px-3 py-2 text-c-text-2">{b.plant ?? "—"}</td>
-                  <td className="px-3 py-2 tabular text-c-text-2">{b.produced_at ?? "—"}</td>
-                  <td className="px-3 py-2 tabular text-c-text-2">{b.unit_count ?? "—"}</td>
+                  <td className="px-3 py-2 text-c-text-2">{b.supplier ?? "n/a"}</td>
+                  <td className="px-3 py-2 text-c-text-2">{b.plant ?? "n/a"}</td>
+                  <td className="px-3 py-2 tabular text-c-text-2">{b.produced_at ?? "n/a"}</td>
+                  <td className="px-3 py-2 tabular text-c-text-2">{b.unit_count ?? "n/a"}</td>
                   <td className="px-3 py-2 tabular text-c-text">{b.findings}</td>
                   <td className="px-3 py-2">
                     {b.findings > 0 ? (
                       <span className={`tabular ${SEV_TEXT[b.worst]}`}>sev {b.worst}</span>
                     ) : (
-                      "—"
+                      "n/a"
                     )}
                   </td>
                 </tr>

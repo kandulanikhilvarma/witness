@@ -10,12 +10,12 @@ import {
 } from "@/lib/iso";
 
 export const metadata = {
-  title: "Taxonomy — Witness",
+  title: "Taxonomy",
   description: "The ISO 15243 and ISO 10825 failure-mode taxonomy Witness classifies against.",
 };
 
 // Public reference for the two catalogs Witness reasons over. Everything here is
-// the same data the classifier and the console use — one source, no drift.
+// the same data the classifier and the console use. One source, no drift.
 export default function TaxonomyPage() {
   return (
     <PublicShell>
@@ -28,8 +28,8 @@ export default function TaxonomyPage() {
         kept separate from the mode on purpose.
       </p>
 
-      <ModeTable title="ISO 15243 — rolling bearings" modes={BEARING_MODES} />
-      <ModeTable title="ISO 10825 — gear teeth" modes={GEAR_MODES} />
+      <ModeTable title="ISO 15243, rolling bearings" modes={BEARING_MODES} />
+      <ModeTable title="ISO 10825, gear teeth" modes={GEAR_MODES} />
 
       <section className="mt-12">
         <h2 className="font-display text-xl text-paper">Severity ramp</h2>
@@ -45,7 +45,7 @@ export default function TaxonomyPage() {
       </section>
 
       <section className="mt-12">
-        <h2 className="font-display text-xl text-paper">Attribution — the third axis</h2>
+        <h2 className="font-display text-xl text-paper">Attribution, the third axis</h2>
         <p className="mt-2 max-w-2xl text-sm text-paper-2">
           A mode says what the surface shows; attribution says why it got there.
           The same pit is a different problem if it came from contamination rather
@@ -64,8 +64,8 @@ export default function TaxonomyPage() {
       <section className="mt-12">
         <h2 className="font-display text-xl text-paper">Plausible cause per mode</h2>
         <p className="mt-2 max-w-2xl text-sm text-paper-2">
-          Which causes ISO ties to each damage class. Not a gate — an inspector can
-          attribute anything — but a finding whose cause is off this list is flagged
+          Which causes ISO ties to each damage class. Not a gate, an inspector can
+          attribute anything, but a finding whose cause is off this list is flagged
           for a second look.
         </p>
         <div className="mt-4 space-y-2">

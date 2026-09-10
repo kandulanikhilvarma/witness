@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { PublicShell } from "@/components/public-shell";
 import { WorkflowFigure } from "@/components/mechanical";
+import { ExplodedBearing } from "@/components/machinery";
 import { BEARING_MODES, GEAR_MODES, ATTRIBUTIONS, SEVERITY } from "@/lib/iso";
 
 export const metadata: Metadata = {
@@ -90,6 +91,9 @@ export default function AboutPage() {
           <div className="mt-6 rounded-md border border-iron/20 bg-ground-2 p-5 shadow-[var(--shadow-raise)]">
             <WorkflowFigure className="w-full" />
           </div>
+          <div className="mt-4 rounded-md border border-iron/20 bg-ground-2 p-5 shadow-[var(--shadow-raise)]">
+            <ExplodedBearing className="w-full" />
+          </div>
         </Block>
 
         <Block title="What the vocabulary covers">
@@ -161,6 +165,52 @@ export default function AboutPage() {
           </ol>
         </Block>
 
+        <Block title="Who makes Witness">
+          <p>
+            Witness is built by{" "}
+            <a
+              href="https://kandula.studio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rule-link text-oxide"
+            >
+              Nikhilvarma Kandula
+            </a>
+            , a founder and AI engineer based in Germany who builds data systems
+            and, lately, products. The work behind this tool follows five
+            operating rules, and the tool inherits all of them.
+          </p>
+          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+            {PRINCIPLES.map((p, i) => (
+              <li
+                key={p.t}
+                className="reveal rounded-md border border-iron/20 bg-ground p-5"
+                style={stagger(i)}
+              >
+                <span className="font-mono text-2xs tabular text-oxide">{`0${i + 1}`}</span>
+                <h3 className="mt-2 font-display text-base">{p.t}</h3>
+                <p className="mt-1.5 text-sm leading-6 text-paper-2">{p.d}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-6 border-l-2 border-brass/50 pl-4 font-editorial text-lg italic leading-8 text-paper-2">
+            &ldquo;The best data work is invisible. The pipeline nobody notices
+            because it never breaks.&rdquo;
+          </p>
+          <p className="mt-4 text-sm leading-6 text-paper-2">
+            More work, writing, and verified credentials live at{" "}
+            <a
+              href="https://kandula.studio/about"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rule-link text-oxide"
+            >
+              kandula.studio/about
+            </a>
+            .
+          </p>
+        </Block>
+
         <section className="rounded-md border border-iron/20 bg-ground-2 p-7">
           <h2 className="font-display text-2xl">See it run</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-paper-2">
@@ -227,6 +277,25 @@ const ROADMAP = [
   {
     t: "Close the loop back to the batch",
     d: "Findings link to batches and suppliers. The fleet cube then shows which mode concentrates where, which is the point of the whole exercise.",
+  },
+];
+
+const PRINCIPLES = [
+  {
+    t: "Define the metric first",
+    d: "You cannot improve what you have not defined. The confidence gate has a visible threshold for exactly this reason.",
+  },
+  {
+    t: "Know when not to trust a model",
+    d: "A model that hides its uncertainty is dangerous. Witness marks an unsure record as unconfirmed and hands it to a person.",
+  },
+  {
+    t: "Publish the null result",
+    d: "What a tool cannot do belongs in plain sight. The model card states the current limits in full, not only the wins.",
+  },
+  {
+    t: "Ship with the trade-offs written down",
+    d: "A working product beats a paper. It ships with its assumptions attached so the next person can check them.",
   },
 ];
 

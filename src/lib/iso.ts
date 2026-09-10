@@ -68,11 +68,11 @@ export interface Attribution {
 }
 
 export const ATTRIBUTIONS: Attribution[] = [
-  { code: "operating", label: "Operating duty", blurb: "Service fatigue at or near rated life — expected wear-out, not a fault." },
+  { code: "operating", label: "Operating duty", blurb: "Service fatigue at or near rated life: expected wear-out, not a fault." },
   { code: "lubrication", label: "Lubrication", blurb: "Starvation, the wrong grade, or a film that has broken down." },
   { code: "contamination", label: "Contamination", blurb: "Solid particles or moisture carried into the contact." },
   { code: "mounting", label: "Mounting / alignment", blurb: "Misalignment, bad fit, or damage taken during fitting." },
-  { code: "overload", label: "Overload", blurb: "Load or preload past design — shock, overspeed, or static brinelling." },
+  { code: "overload", label: "Overload", blurb: "Load or preload past design: shock, overspeed, or static brinelling." },
   { code: "electrical", label: "Electrical", blurb: "Stray current passage across the contact." },
   { code: "corrosion", label: "Corrosion", blurb: "Corrosive environment, standing moisture, or fretting." },
   { code: "handling", label: "Handling", blurb: "Transport, storage, or install damage before the part ever ran." },

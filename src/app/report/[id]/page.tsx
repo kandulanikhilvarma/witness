@@ -9,7 +9,7 @@ import { PrintButton } from "@/components/print-button";
 export const dynamic = "force-dynamic";
 
 // A print-ready warranty / inspection report for one finding. Deliberately
-// outside the console rail and on white paper — the browser's Save-as-PDF turns
+// outside the console rail and on white paper. The browser's Save-as-PDF turns
 // it into the document a warranty claim attaches. The ISO clause and the
 // inspector's authoritative call are what a supplier disputes against.
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
@@ -56,13 +56,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <tbody>
               <Line k="Standard" v={`${f.iso_standard} (${family})`} />
               <Line k="Clause" v={f.iso_clause ?? f.iso_mode} />
-              <Line k="Failure mode" v={`${f.iso_mode} — ${modeLabel(f.iso_standard, f.iso_mode)}`} />
-              <Line k="Severity" v={`${f.severity} · ${sm.label} — ${sm.action}`} />
+              <Line k="Failure mode" v={`${f.iso_mode} · ${modeLabel(f.iso_standard, f.iso_mode)}`} />
+              <Line k="Severity" v={`${f.severity} · ${sm.label} · ${sm.action}`} />
               <Line k="Attribution" v={attr ? attr.label : "Unattributed"} />
-              <Line k="Confidence" v={f.confidence != null ? f.confidence.toFixed(2) : "—"} />
-              <Line k="Anomaly score" v={f.anomaly_score != null ? `${f.anomaly_score.toFixed(2)}×` : "—"} />
-              <Line k="Batch" v={f.batches.map((b) => `${b.batch_code}${b.supplier ? ` (${b.supplier})` : ""}`).join(", ") || "—"} />
-              <Line k="Model" v={f.model_version ?? "—"} />
+              <Line k="Confidence" v={f.confidence != null ? f.confidence.toFixed(2) : "n/a"} />
+              <Line k="Anomaly score" v={f.anomaly_score != null ? `${f.anomaly_score.toFixed(2)}×` : "n/a"} />
+              <Line k="Batch" v={f.batches.map((b) => `${b.batch_code}${b.supplier ? ` (${b.supplier})` : ""}`).join(", ") || "n/a"} />
+              <Line k="Model" v={f.model_version ?? "n/a"} />
               <Line k="Recorded" v={new Date(f.created_at).toLocaleString()} />
               <Line k="Status" v={reviewed ? `Inspector ${f.review_state}` : `Not yet reviewed (${f.review_state})`} />
             </tbody>

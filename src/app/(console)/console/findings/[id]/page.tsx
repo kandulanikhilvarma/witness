@@ -83,11 +83,11 @@ export default async function FindingPage({ params }: { params: Promise<{ id: st
             <div className="aspect-square rounded-sm border border-dashed border-c-line" />
           )}
           <dl className="mt-3 space-y-1 text-2xs">
-            <Row k="Anomaly" v={f.anomaly_score != null ? `${f.anomaly_score.toFixed(2)}×` : "—"} />
-            <Row k="Confidence" v={f.confidence != null ? f.confidence.toFixed(2) : "—"} />
+            <Row k="Anomaly" v={f.anomaly_score != null ? `${f.anomaly_score.toFixed(2)}×` : "n/a"} />
+            <Row k="Confidence" v={f.confidence != null ? f.confidence.toFixed(2) : "n/a"} />
             <Row k="Review" v={f.review_state} />
-            <Row k="Model" v={f.model_version ?? "—"} />
-            <Row k="Taxonomy" v={f.taxonomy_version ?? "—"} />
+            <Row k="Model" v={f.model_version ?? "n/a"} />
+            <Row k="Taxonomy" v={f.taxonomy_version ?? "n/a"} />
           </dl>
         </div>
 
@@ -95,7 +95,7 @@ export default async function FindingPage({ params }: { params: Promise<{ id: st
           <section>
             <h2 className="mb-1 text-2xs uppercase tracking-wide text-c-text-3">ISO trace</h2>
             <p className="text-sm text-c-text">
-              {f.iso_standard} clause {f.iso_clause ?? f.iso_mode} —{" "}
+              {f.iso_standard} clause {f.iso_clause ?? f.iso_mode},{" "}
               {modeLabel(f.iso_standard, f.iso_mode)}
               {f.iso_submode ? ` · ${f.iso_submode}` : ""}
             </p>
@@ -114,7 +114,7 @@ export default async function FindingPage({ params }: { params: Promise<{ id: st
                 <span className="mt-0.5 block text-2xs text-c-text-3">{attr.blurb}</span>
               </p>
             ) : (
-              <p className="text-sm text-c-text-3">Unattributed — set in the review queue.</p>
+              <p className="text-sm text-c-text-3">Unattributed. Set in the review queue.</p>
             )}
           </section>
 

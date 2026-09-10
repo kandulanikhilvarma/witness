@@ -69,8 +69,8 @@
   /* --- Typography ---------------------------------------------------------
      All open-licence (OFL), all self-hosted by next/font at build time.
      No runtime CDN request. No Inter, no Roboto. */
-  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-cabin), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
   --font-editorial: var(--font-fraunces), ui-serif, Georgia, serif;
 

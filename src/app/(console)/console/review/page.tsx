@@ -92,7 +92,7 @@ export default async function ReviewPage() {
         <h1 className="font-display text-2xl">Review queue</h1>
         <p className="mt-1 text-sm text-c-text-2">
           Stage-2 sent these here because its confidence fell below the gate. Your
-          call is the authoritative one — confirm the suggestion or correct it,
+          call is the authoritative one. Confirm the suggestion or correct it,
           set the cause, and it flows into the insights cube.
         </p>
       </header>
@@ -143,7 +143,7 @@ function ReviewCard({ f }: { f: Queued }) {
           {f.anomaly_score != null && (
             <>anomaly {f.anomaly_score.toFixed(2)}× · </>
           )}
-          conf {f.confidence?.toFixed(2) ?? "—"}
+          conf {f.confidence?.toFixed(2) ?? "n/a"}
         </div>
       </div>
 
@@ -152,7 +152,7 @@ function ReviewCard({ f }: { f: Queued }) {
           <span className={`tabular ${SEV_TEXT[f.severity]}`}>{sm.glyph}</span>
           {f.iso_standard} · suggested{" "}
           <span className="text-c-text-2">
-            {f.iso_mode} — {modes.find((m) => m.code === f.iso_mode)?.label ?? f.iso_mode}
+            {f.iso_mode} · {modes.find((m) => m.code === f.iso_mode)?.label ?? f.iso_mode}
           </span>
         </div>
         {f.evidence_text && <p className="text-2xs text-c-text-3">{f.evidence_text}</p>}

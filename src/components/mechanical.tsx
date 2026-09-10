@@ -2,7 +2,7 @@ import { bearing, gearPath, meshPhase, polar, leader } from "@/lib/mech";
 
 // Mechanical drawings of the two part families Witness classifies. They are
 // schematics, not renders: line weight carries the meaning, colour is spent
-// only on the zone under discussion. Everything here is server-rendered SVG —
+// only on the zone under discussion. Everything here is server-rendered SVG:
 // no canvas, no chart library, no client JavaScript.
 
 const LINE = "var(--color-iron)";
@@ -55,7 +55,7 @@ export function BearingFigure({ className = "" }: { className?: string }) {
       aria-label="Cutaway drawing of a deep-groove ball bearing. Callouts mark the outer raceway, the rolling elements, the inner raceway and the bore, each labelled with the ISO 15243 damage classes that appear there."
     >
       <g fill="none" stroke={LINE} strokeWidth="1">
-        {/* Centre lines — the drawing-office convention for an axis of revolution. */}
+        {/* Centre lines, the drawing-office convention for an axis of revolution. */}
         <path
           d={`M ${cx - 148} ${cy} H ${cx + 148} M ${cx} ${cy - 148} V ${cy + 148}`}
           strokeDasharray="14 4 3 4"
@@ -122,7 +122,7 @@ export function BearingFigure({ className = "" }: { className?: string }) {
       </g>
 
       <text x="20" y="326" fontSize="11" fill={META} fontFamily="var(--font-mono)">
-        FIG. 1 — ROLLING BEARING · ISO 15243
+        FIG. 1 · ROLLING BEARING · ISO 15243
       </text>
     </svg>
   );
@@ -250,7 +250,7 @@ export function GearMeshFigure({ className = "" }: { className?: string }) {
       </g>
 
       <text x="20" y="348" fontSize="11" fill={META} fontFamily="var(--font-mono)">
-        FIG. 2 — SPUR MESH · ISO 10825
+        FIG. 2 · SPUR MESH · ISO 10825
       </text>
     </svg>
   );

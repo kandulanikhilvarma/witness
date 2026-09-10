@@ -56,7 +56,7 @@ export default async function IntakePage() {
       <header className="mb-6">
         <h1 className="font-display text-2xl">Intake</h1>
         <p className="mt-1 text-sm text-c-text-2">
-          A photo becomes an asset — EXIF read, provenance scored, and hashed
+          A photo becomes an asset: EXIF read, provenance scored, and hashed
           against your other photos to catch a re-sent duplicate. Classification
           comes later in the pipeline.
         </p>
@@ -117,7 +117,7 @@ function AssetCard({ a }: { a: Asset }) {
 
         {a.near_dupe_of && (
           <p className="mt-2 rounded-sm border border-sev-2/40 bg-sev-2-bg px-3 py-2 text-2xs text-sev-2">
-            Near-duplicate — {a.dupe_distance} bits from an earlier photo in this
+            Near-duplicate: {a.dupe_distance} bits from an earlier photo in this
             workspace. Counted once; not fresh evidence.
           </p>
         )}

@@ -1,7 +1,7 @@
 import { PublicShell } from "@/components/public-shell";
 
 export const metadata = {
-  title: "Model card — Witness",
+  title: "Model card",
   description: "Model card for the Witness two-stage defect classifier.",
 };
 
@@ -13,7 +13,7 @@ export default function ModelCardPage() {
       <p className="mt-4 max-w-2xl text-paper-2">
         Witness classifies photographs of returned rotating-equipment parts into
         ISO failure modes. It is a two-stage system, and neither stage is a single
-        trained checkpoint — this card documents both.
+        trained checkpoint. This card documents both.
       </p>
 
       <Section title="Model details">
@@ -31,7 +31,7 @@ export default function ModelCardPage() {
       </Section>
 
       <Section title="Training data">
-        <Field k="Reference sets" v="Each tenant enrolls its own photographs of known-good parts, per part family. Stage-1's memory bank is built only from that set — nothing else." />
+        <Field k="Reference sets" v="Each tenant enrolls its own photographs of known-good parts, per part family. Stage-1's memory bank is built only from that set, nothing else." />
         <Field k="Synthetic data" v="None. No synthetic defects are generated or used." />
         <Field k="Bundled datasets" v="The dataset registry admits only redistribution-clean licences; MVTec, Kolektor and similar are excluded or cite-only." />
       </Section>
@@ -39,7 +39,7 @@ export default function ModelCardPage() {
       <Section title="Metrics">
         <Field k="Stage-1 threshold" v="Calibrated leave-one-image-out from the reference set's own scores, times a tunable margin. Reported per enrolment (bank size, reference-score spread)." />
         <Field k="Stage-2 confidence" v="Gated at 0.7: at or above auto-files, below routes to the review queue. The gate, not the model source, decides." />
-        <Field k="Caveat" v="These are operational calibration figures, not benchmark accuracy on a held-out defect set — this is a per-tenant system without one." />
+        <Field k="Caveat" v="These are operational calibration figures, not benchmark accuracy on a held-out defect set. This is a per-tenant system without one." />
       </Section>
 
       <Section title="Ethical considerations & limitations">

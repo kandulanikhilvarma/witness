@@ -136,3 +136,30 @@ export function leader(from: Point, to: Point, elbow = 14): string {
   const mid = from.x + dir * elbow;
   return `M ${n(from.x)} ${n(from.y)} L ${n(mid)} ${n(from.y)} L ${n(to.x)} ${n(to.y)}`;
 }
+
+/** A regular hexagon (bolt head, seen on the flats), pointy-top by default. */
+export function hexPath(cx: number, cy: number, r: number, phase = -90): string {
+  const pts = Array.from({ length: 6 }, (_, i) => polar(cx, cy, r, phase + i * 60));
+  return pts.map((p, i) => `${i === 0 ? "M" : "L"} ${n(p.x)} ${n(p.y)}`).join(" ") + " Z";
+}
+
+/** Centres on a bolt circle. Catalogue plates and flanges sit on these. */
+export function boltCircle(cx: number, cy: number, r: number, count: number, phase = -90): Point[] {
+  return Array.from({ length: count }, (_, i) => polar(cx, cy, r, phase + (i * 360) / count));
+}
+
+/**
+ * A helical compression spring drawn side-on between two x positions, as a
+ * single zig-zag path. Coils is the number of full turns; amp is the radius.
+ */
+export function springPath(x0: number, x1: number, cy: number, coils: number, amp: number): string {
+  const segs = coils * 2;
+  const dx = (x1 - x0) / segs;
+  let d = `M ${n(x0)} ${n(cy)}`;
+  for (let i = 1; i <= segs; i++) {
+    const x = x0 + i * dx;
+    const y = cy + (i % 2 === 0 ? 0 : i % 4 === 1 ? -amp : amp);
+    d += ` L ${n(x)} ${n(y)}`;
+  }
+  return d;
+}

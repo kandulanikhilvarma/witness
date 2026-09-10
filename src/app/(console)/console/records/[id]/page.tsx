@@ -74,7 +74,7 @@ export default async function RecordDetail({
                 {rec.batchCode}
               </Link>
             ) : (
-              "—"
+              "n/a"
             )}
           </Field>
           <Field label="Dimensions">
@@ -101,7 +101,7 @@ export default async function RecordDetail({
           Model suggested{" "}
           <span className="tabular text-c-text-3">{rec.modeCode}</span> {rec.modeLabel},
           severity {rec.severity}, confidence {Math.round(rec.confidence * 100)}% (
-          <span className="tabular">{rec.classifier}</span>). Confirm or override —
+          <span className="tabular">{rec.classifier}</span>). Confirm or override,
           your call is authoritative and becomes a training label.
         </p>
         <div className="mt-3">

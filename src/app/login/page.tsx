@@ -70,7 +70,7 @@ export default function Login() {
         {busy ? "Opening…" : "Enter the demo workspace"}
       </button>
       <p className="mt-2 text-2xs text-iron">
-        Anonymous session — a private workspace, no email required.
+        Anonymous session: a private workspace, no email required.
       </p>
 
       <form onSubmit={magic} className="mt-10 flex flex-col gap-3 border-t border-iron/20 pt-8">

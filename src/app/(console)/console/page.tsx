@@ -134,7 +134,7 @@ export default async function ConsolePage({
       </div>
 
       <p className="mt-6 text-2xs text-c-text-3">
-        Classifier suggestions come from a placeholder model — confirm each record
+        Classifier suggestions come from a placeholder model. Confirm each record
         to set the authoritative classification.
       </p>
     </div>
@@ -259,7 +259,7 @@ async function SupabaseConsole() {
       <div className="mt-6">
         {total === 0 ? (
           <p className="rounded-sm border border-dashed border-c-line bg-c-surface p-8 text-center text-sm text-c-text-3">
-            No findings yet. This workspace is empty — ingest arrives in phase 2.
+            No findings yet. This workspace is empty. Ingest arrives in phase 2.
           </p>
         ) : (
           <div className="overflow-x-auto rounded-sm border border-c-line">

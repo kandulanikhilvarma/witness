@@ -112,7 +112,7 @@ export default async function InsightsPage({
         <div>
           <h1 className="font-display text-2xl">Insights</h1>
           <p className="mt-1 text-sm text-c-text-2">
-            Every finding sits in a cube — ISO mode, severity, and the cause it
+            Every finding sits in a cube: ISO mode, severity, and the cause it
             was attributed to. Slice it by clicking a cause or a severity; the
             matrix re-counts.
           </p>
@@ -171,7 +171,7 @@ export default async function InsightsPage({
                     <th key={s.level} className="px-3 py-2 text-center font-medium">
                       <Link
                         href={toggleHref(sp, "sev", String(s.level))}
-                        title={`${s.label} — ${s.action}`}
+                        title={`${s.label}: ${s.action}`}
                         className={`inline-flex items-center gap-1 ${
                           filter.severities.has(s.level) ? "text-c-text" : "hover:text-c-text"
                         }`}
@@ -242,7 +242,7 @@ export default async function InsightsPage({
               </h2>
               <p className="mt-1 text-2xs text-c-text-2">
                 The cause assigned here is not one ISO lists for that damage mode.
-                Worth a second look — a mis-call, or a genuinely unusual failure.
+                Worth a second look: a mis-call, or a genuinely unusual failure.
               </p>
               <ul className="mt-2 space-y-1 text-2xs text-c-text-2">
                 {flagged.slice(0, 8).map((f, i) => (

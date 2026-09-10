@@ -34,7 +34,7 @@ function readAsDataUrl(file: File): Promise<string> {
 }
 
 // Score a candidate part against the trained reference set. The heatmap is the
-// per-patch nearest-neighbour distance — hot cells are where the subject looks
+// per-patch nearest-neighbour distance. Hot cells are where the subject looks
 // least like anything the model saw as normal.
 export function SubjectScorer({ enrolId }: { enrolId: string }) {
   const [busy, setBusy] = useState(false);
@@ -97,7 +97,7 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
         <div>
           <h3 className="text-sm text-c-text">Score a subject</h3>
           <p className="text-2xs text-c-text-3">
-            Test any photo against this reference set. Stage-1 anomaly only — the
+            Test any photo against this reference set. Stage-1 anomaly only. The
             ISO call comes later.
           </p>
         </div>

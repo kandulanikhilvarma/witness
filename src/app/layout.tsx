@@ -1,30 +1,26 @@
-import type { Metadata } from "next";
-import {
-  Space_Grotesk,
-  Archivo,
-  JetBrains_Mono,
-  Fraunces,
-} from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Jost, Cabin, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 
 // next/font downloads and self-hosts these at build time. The browser never
 // requests a font CDN. All four are OFL.
 
-// Display. Space Grotesk carries the drawing-office character the product wants
-// — squared terminals, a single-storey g, tight apertures — without the novelty
-// that would date a tool meant to be read every shift.
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+// Display. Jost is a geometric sans in the Futura/Kabel line: circular bowls,
+// a high waist, near-monoline strokes. It carries the catalogue-plate character
+// the product wants without novelty that would date a tool read every shift.
+const jost = Jost({
+  variable: "--font-jost",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-// Body. Archivo is a grotesque drawn for high performance at small sizes, which
-// is the whole job here: dense tables, long clause names, a bench light that is
-// never as good as the design studio's.
-const archivo = Archivo({
-  variable: "--font-archivo",
+// Body. Cabin sits in the humanist tradition of Edward Johnston and Eric Gill:
+// open apertures, a warm axis, high legibility at small sizes. That is the whole
+// job here, dense tables, long clause names, a bench light that is never as good
+// as the design studio's.
+const cabin = Cabin({
+  variable: "--font-cabin",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
@@ -49,24 +45,112 @@ const fraunces = Fraunces({
   display: "swap",
 });
 
+const SITE = "https://witness-kandula.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE),
   title: {
-    default: "Witness — read the damage, name the cause",
+    default: "Witness, read the damage, name the cause",
     template: "%s · Witness",
   },
   description:
     "Defect intelligence for rotating equipment. Photographs of returned gearbox parts become ISO 15243 and ISO 10825 failure records, linked to the batch that produced them.",
   applicationName: "Witness",
+  keywords: [
+    "ISO 15243",
+    "ISO 10825",
+    "bearing failure analysis",
+    "gear failure analysis",
+    "rotating equipment",
+    "defect intelligence",
+    "warranty analysis",
+    "anomaly detection",
+    "PatchCore",
+    "condition monitoring",
+  ],
   authors: [{ name: "Nikhilvarma Kandula", url: "https://kandula.studio" }],
+  creator: "Nikhilvarma Kandula",
+  publisher: "Kandula Studio",
+  category: "technology",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Witness",
+    url: SITE,
+    title: "Witness, read the damage, name the cause",
+    description:
+      "Photographs of returned gearbox parts become ISO 15243 and ISO 10825 failure records, linked to the batch that produced them.",
+    locale: "en_GB",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Witness, read the damage, name the cause",
+    description:
+      "Defect intelligence for rotating equipment. ISO 15243 and ISO 10825 failure records, linked to the batch that produced them.",
+    creator: "@kandulanikhil",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f6f2ea",
+  colorScheme: "light",
+};
+
+// Structured data. A JSON-LD graph so search engines and answer engines (GEO)
+// can state what Witness is, what standards it uses, and who makes it, without
+// scraping the prose. Kept in one graph so the entities cross-reference.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${SITE}/#app`,
+      name: "Witness",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: SITE,
+      description:
+        "Defect intelligence for rotating equipment. Photographs of returned gearbox parts become ISO 15243 and ISO 10825 failure records, linked to the batch that produced them.",
+      featureList: [
+        "ISO 15243 rolling-bearing damage classification",
+        "ISO 10825 gear-tooth damage classification",
+        "PatchCore anomaly detection",
+        "Batch-linked warranty records",
+        "Printable warranty report and JSON export",
+      ],
+      creator: { "@id": `${SITE}/#maker` },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    },
+    {
+      "@type": "Person",
+      "@id": `${SITE}/#maker`,
+      name: "Nikhilvarma Kandula",
+      url: "https://kandula.studio",
+      jobTitle: "Founder and AI engineer",
+      description:
+        "Founder and AI engineer based in Germany who builds data systems and products.",
+    },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${archivo.variable} ${jetbrains.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${jost.variable} ${cabin.variable} ${jetbrains.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

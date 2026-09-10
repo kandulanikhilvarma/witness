@@ -75,7 +75,7 @@ export function BatchForm({
           defaultValue={initial?.partFamily ?? ""}
           className="rounded-sm border border-c-line bg-c-surface-2 px-2 py-1.5 text-sm text-c-text"
         >
-          <option value="">—</option>
+          <option value="">None</option>
           <option value="bearing">Bearing</option>
           <option value="gear">Gear</option>
         </select>

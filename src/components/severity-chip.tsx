@@ -1,8 +1,8 @@
 import { severity as sevInfo } from "@/lib/iso";
 
 // Severity never rides on hue alone. Each chip carries the hue, a fill glyph
-// (○◔◑◕● — a filling disc, readable as a pattern), and the numeral. Any one of
-// the three survives if the others fail — deuteranopia, greyscale print, a
+// (○◔◑◕●, a filling disc readable as a pattern), and the numeral. Any one of
+// the three survives if the others fail: deuteranopia, greyscale print, a
 // blown-out console.
 const STYLES: Record<number, { fg: string; bg: string; bd: string }> = {
   0: { fg: "text-sev-0", bg: "bg-sev-0-bg", bd: "border-sev-0/40" },

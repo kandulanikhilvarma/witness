@@ -81,7 +81,7 @@ export default async function EnrolPage({
         <p className="mt-1 text-sm text-c-text-2">
           Teach Witness what a good part looks like. Pick a part family, open a
           reference set, and add known-good photos. The anomaly model trains on
-          this set — nothing else — so it stays specific to your parts.
+          this set, nothing else, so it stays specific to your parts.
         </p>
       </header>
 
@@ -203,7 +203,7 @@ export default async function EnrolPage({
               {detail.enrolment.image_count < MIN_REFERENCE_IMAGES && (
                 <p className="mb-4 rounded-sm border border-sev-1/40 bg-sev-1-bg px-3 py-2 text-2xs text-sev-1">
                   {MIN_REFERENCE_IMAGES}+ images make a stable normal-set. This set
-                  has {detail.enrolment.image_count} — you can train now, but treat
+                  has {detail.enrolment.image_count}. You can train now, but treat
                   results as indicative until the set fills out.
                 </p>
               )}
@@ -229,7 +229,7 @@ export default async function EnrolPage({
                   </span>
                 )}
                 {detail.enrolment.status === "failed" && (
-                  <span className="text-2xs text-sev-3">Training failed — try again.</span>
+                  <span className="text-2xs text-sev-3">Training failed. Try again.</span>
                 )}
               </div>
 

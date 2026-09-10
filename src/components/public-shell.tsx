@@ -1,14 +1,9 @@
 import Link from "next/link";
-
-const NAV = [
-  { href: "/about", label: "About" },
-  { href: "/taxonomy", label: "Taxonomy" },
-  { href: "/transparency", label: "Transparency" },
-  { href: "/model-card", label: "Model card" },
-];
+import { NavLinks, MobileNav } from "@/components/nav-links";
+import { NAV } from "@/components/nav";
 
 /**
- * The wordmark. A ring with a single marked rolling element — the part the
+ * The wordmark. A ring with a single marked rolling element, the part the
  * product looks at, reduced to the smallest drawing that still reads as a
  * bearing at 20 px.
  */
@@ -27,32 +22,25 @@ export function Wordmark({ className = "" }: { className?: string }) {
 
 /**
  * Shared chrome for the public, unauthenticated pages. Warm paper ground, ink
- * text, one accent — the marketing regime, not the austere console.
+ * text, one accent, the marketing regime, not the austere console.
  */
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-iron/15 bg-ground/85 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-3.5 sm:px-8">
+      <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-6 py-3 sm:px-8">
         <Link href="/" className="text-paper transition-colors hover:text-oxide">
           <Wordmark />
         </Link>
-        <nav className="flex items-center gap-0.5 text-sm">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="rounded-sm px-3 py-1.5 text-paper-2 transition-colors hover:bg-iron/10 hover:text-paper"
-            >
-              {n.label}
-            </Link>
-          ))}
+        <nav aria-label="Primary" className="hidden items-center gap-0.5 text-sm sm:flex">
+          <NavLinks />
           <Link
             href="/console"
-            className="ml-2 rounded-sm bg-oxide px-4 py-2 font-medium text-on-accent transition-colors hover:bg-oxide-deep"
+            className="ml-2 flex min-h-[44px] items-center rounded-sm bg-oxide px-4 font-medium text-on-accent transition-colors hover:bg-oxide-deep"
           >
             Open console
           </Link>
         </nav>
+        <MobileNav />
       </div>
     </header>
   );
@@ -85,24 +73,31 @@ export function SiteFooter() {
           <h2 className="font-mono text-2xs uppercase tracking-[0.2em] text-brass">Standards</h2>
           <ul className="mt-3 space-y-2 text-sm text-paper-2">
             <li>
-              <span className="tabular text-paper">ISO 15243</span> — rolling bearings
+              <span className="tabular text-paper">ISO 15243</span>, rolling bearings
             </li>
             <li>
-              <span className="tabular text-paper">ISO 10825</span> — gear teeth
+              <span className="tabular text-paper">ISO 10825</span>, gear teeth
             </li>
             <li>
-              <span className="tabular text-paper">ISA-101</span> — console display
+              <span className="tabular text-paper">ISA-101</span>, console display
             </li>
             <li>
-              <span className="tabular text-paper">WCAG 2.2 AA</span> — contrast and focus
+              <span className="tabular text-paper">WCAG 2.2 AA</span>, contrast and focus
             </li>
           </ul>
         </div>
       </div>
       <div className="border-t border-iron/15">
         <p className="mx-auto w-full max-w-6xl px-6 py-4 text-2xs text-iron sm:px-8">
-          Witness · records stay in the workspace that made them · built by
-          Nikhilvarma Kandula
+          Witness · records stay in the workspace that made them · built by{" "}
+          <a
+            href="https://kandula.studio"
+            className="rule-link text-paper-2 hover:text-paper"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Nikhilvarma Kandula
+          </a>
         </p>
       </div>
     </footer>
@@ -112,8 +107,16 @@ export function SiteFooter() {
 export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-full flex-1 flex-col bg-ground text-paper">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-oxide focus:px-4 focus:py-2 focus:text-sm focus:text-on-accent"
+      >
+        Skip to content
+      </a>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 pb-24 pt-10 sm:px-8">{children}</main>
+      <main id="main" className="mx-auto w-full max-w-4xl flex-1 px-6 pb-24 pt-10 sm:px-8">
+        {children}
+      </main>
       <SiteFooter />
     </div>
   );

@@ -3,6 +3,8 @@ import type { CSSProperties } from "react";
 import { SEVERITY, BEARING_MODES, GEAR_MODES, ATTRIBUTIONS } from "@/lib/iso";
 import { SiteHeader, SiteFooter } from "@/components/public-shell";
 import { BearingFigure, GearMeshFigure, WorkflowFigure } from "@/components/mechanical";
+import { ExplodedBearing, SpecPlate, GaugeDial, TitleBlock } from "@/components/machinery";
+import { ControlStrip } from "@/components/control-strip";
 
 // Marketing regime: warm paper, ink, one gauge-teal accent. The console stays
 // austere; this page is allowed to move.
@@ -76,10 +78,17 @@ function Hero() {
           </dl>
         </div>
 
-        <div className="reveal" style={stagger(1)}>
+        <div className="reveal space-y-3" style={stagger(1)}>
           <div className="rounded-md border border-iron/20 bg-ground-2 p-4 shadow-[var(--shadow-raise)]">
             <BearingFigure className="w-full" />
           </div>
+          <ControlStrip
+            channels={[
+              { key: "b", standard: "ISO 15243", readout: `${BEARING_MODES.length} MODES`, note: "Rolling-bearing damage classes" },
+              { key: "g", standard: "ISO 10825", readout: `${GEAR_MODES.length} MODES`, note: "Gear-tooth wear and damage classes" },
+              { key: "a", standard: "ISA-101", readout: "HMI", note: "High-performance display discipline" },
+            ]}
+          />
         </div>
       </div>
     </section>
@@ -107,7 +116,7 @@ const OBJECTIVES = [
   {
     n: "02",
     title: "Separate what from why",
-    body: "The damage mode says what the surface shows. The attribution says why it got there. The same pit can mean end of life or a contaminant dent that seeded it early — and the batch-level action differs.",
+    body: "The damage mode says what the surface shows. The attribution says why it got there. The same pit can mean end of life or a contaminant dent that seeded it early, and the batch-level action differs.",
   },
   {
     n: "03",
@@ -161,7 +170,7 @@ const STEPS = [
   {
     n: "4",
     t: "Classify",
-    d: "Stage two asks a second question: which ISO mode is it? The choice is forced — the model must pick from the standard's own list, never invent a label.",
+    d: "Stage two asks a second question: which ISO mode is it? The choice is forced. The model must pick from the standard's own list, never invent a label.",
   },
   {
     n: "5",
@@ -175,11 +184,19 @@ function Workflow() {
     <Section
       kicker="Workflow"
       title="Photograph in, reviewed finding out"
-      lead="Each stage does one job and hands off. Nothing decides for itself past the confidence gate — that gate is the single place the system chooses whether a person is needed."
+      lead="Each stage does one job and hands off. Nothing decides for itself past the confidence gate. That gate is the single place the system chooses whether a person is needed."
       tone="raised"
     >
-      <div className="rounded-md border border-iron/20 bg-ground-2 p-5 shadow-[var(--shadow-raise)]">
-        <WorkflowFigure className="w-full" />
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+        <div className="rounded-md border border-iron/20 bg-ground-2 p-5 shadow-[var(--shadow-raise)]">
+          <WorkflowFigure className="w-full" />
+        </div>
+        <div className="flex flex-col items-center justify-center rounded-md border border-iron/20 bg-ground-2 p-5 shadow-[var(--shadow-raise)]">
+          <GaugeDial value={0.82} display="0.82" label="gate threshold" className="w-40" />
+          <p className="mt-1 max-w-[13rem] text-center text-2xs leading-5 text-paper-2">
+            Score above the threshold files itself. Below it queues for a person.
+          </p>
+        </div>
       </div>
 
       <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -239,7 +256,7 @@ function Standards() {
             <h3 className="font-display text-lg">Gear teeth · ISO 10825</h3>
             <p className="mt-1.5 text-sm leading-6 text-paper-2">
               {GEAR_MODES.length} wear and damage classes covering the flank,
-              the root and the mesh — wear, scuffing, contact fatigue, cracks
+              the root and the mesh: wear, scuffing, contact fatigue, cracks
               and tooth fracture.
             </p>
           </figcaption>
@@ -264,6 +281,66 @@ function Standards() {
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-md border border-iron/20 bg-ground-2">
+        <div className="flex items-center justify-between border-b border-iron/15 px-5 py-3">
+          <h3 className="font-display text-lg">Inside the part it reads</h3>
+          <TitleBlock sheet="03" title="Bearing assembly" rev="B" scale="NTS" />
+        </div>
+        <div className="p-4">
+          <ExplodedBearing className="w-full" />
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="font-mono text-2xs uppercase tracking-[0.28em] text-brass">Reference geometry</p>
+        <div className="mt-3 grid gap-4 md:grid-cols-2">
+          <SpecPlate
+            drawing="bolt"
+            code="FIG. 4-A"
+            title="Fastener"
+            rows={[
+              { k: "Thread", v: "M12 × 1.75" },
+              { k: "Grade", v: "10.9" },
+              { k: "Head", v: "hex, 19 A/F" },
+              { k: "Torque", v: "86 N·m" },
+            ]}
+          />
+          <SpecPlate
+            drawing="shaft"
+            code="FIG. 4-B"
+            title="Shaft seat"
+            rows={[
+              { k: "Diameter", v: "Ø 20 h6" },
+              { k: "Fit", v: "k5 interference" },
+              { k: "Ra", v: "0.4 µm" },
+              { k: "Runout", v: "0.010 mm" },
+            ]}
+          />
+          <SpecPlate
+            drawing="spring"
+            code="FIG. 4-C"
+            title="Preload spring"
+            rows={[
+              { k: "Free length", v: "84 mm" },
+              { k: "Rate", v: "12 N/mm" },
+              { k: "Wire", v: "Ø 2.5 mm" },
+              { k: "Ends", v: "closed, ground" },
+            ]}
+          />
+          <SpecPlate
+            drawing="flange"
+            code="FIG. 4-D"
+            title="Housing flange"
+            rows={[
+              { k: "Bolt circle", v: "Ø 68 mm" },
+              { k: "Holes", v: "6 × Ø 9" },
+              { k: "Pilot", v: "Ø 36 H7" },
+              { k: "Material", v: "EN-GJL-250" },
+            ]}
+          />
+        </div>
       </div>
     </Section>
   );
@@ -313,7 +390,7 @@ const CAPABILITIES = [
   {
     kicker: "Traceable",
     title: "Every record cites a clause",
-    body: `Bearings map to ISO 15243 damage classes and gears to ISO 10825 — ${BEARING_MODES.length + GEAR_MODES.length} modes carrying the standard's own numbering, so a finding traces back to the document.`,
+    body: `Bearings map to ISO 15243 damage classes and gears to ISO 10825, ${BEARING_MODES.length + GEAR_MODES.length} modes carrying the standard's own numbering, so a finding traces back to the document.`,
   },
   {
     kicker: "Isolated",
@@ -333,7 +410,7 @@ const CAPABILITIES = [
   {
     kicker: "Analytic",
     title: "The fleet cube",
-    body: "Insights aggregates on three axes at once — ISO mode against severity against attribution — so a lubrication problem separates from a design problem.",
+    body: "Insights aggregates on three axes at once: ISO mode against severity against attribution, so a lubrication problem separates from a design problem.",
   },
   {
     kicker: "Portable",
@@ -347,7 +424,7 @@ function Capabilities() {
     <Section
       kicker="Features"
       title="What you get once records start accumulating"
-      lead="The first finding is useful. The hundredth is where the system earns its place — patterns across suppliers, batches and duty cycles become visible."
+      lead="The first finding is useful. The hundredth is where the system earns its place: patterns across suppliers, batches and duty cycles become visible."
       tone="raised"
     >
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

@@ -1,15 +1,15 @@
 import { PublicShell } from "@/components/public-shell";
 
 export const metadata = {
-  title: "Transparency — Witness",
+  title: "Transparency",
   description: "How Witness classifies, what it does not do, and the data it is and is not built on.",
 };
 
 const COVERAGE = [
-  { cap: "Intake — EXIF, provenance, perceptual-hash dedupe", status: "live" },
-  { cap: "Stage-1 anomaly — PatchCore-style memory bank", status: "live" },
-  { cap: "Stage-2 ISO forced-choice — keyless heuristic", status: "live" },
-  { cap: "Stage-2 ISO forced-choice — VLM (OpenRouter)", status: "optional" },
+  { cap: "Intake: EXIF, provenance, perceptual-hash dedupe", status: "live" },
+  { cap: "Stage-1 anomaly: PatchCore-style memory bank", status: "live" },
+  { cap: "Stage-2 ISO forced-choice: keyless heuristic", status: "live" },
+  { cap: "Stage-2 ISO forced-choice: VLM (OpenRouter)", status: "optional" },
   { cap: "Confidence gate + human review queue", status: "live" },
   { cap: "3-axis insights (mode × severity × cause)", status: "live" },
   { cap: "Batch / supplier linking", status: "live" },
@@ -39,8 +39,8 @@ export default function TransparencyPage() {
       </p>
 
       <Block title="Stage-1 is a memory bank, not a deep model">
-        The anomaly detector is PatchCore&apos;s shape — a memory bank of normal
-        patch features, scored by nearest-neighbour distance — but with cheap
+        The anomaly detector is PatchCore&apos;s shape, a memory bank of normal
+        patch features scored by nearest-neighbour distance, but with cheap
         local patch statistics instead of a deep backbone. A real timm backbone
         (torch) does not fit a serverless function&apos;s size limits, so it is
         honest to say this is a classical-feature detector today. It runs as a
@@ -49,7 +49,7 @@ export default function TransparencyPage() {
 
       <Block title="Stage-2 forces a choice">
         Given an anomalous crop, Stage-2 must return one code from the part
-        family&apos;s ISO catalog — a hallucinated code is discarded. Without an
+        family&apos;s ISO catalog. A hallucinated code is discarded. Without an
         API key it uses a deterministic heuristic; with an OpenRouter key it routes
         to a vision model. Either way the confidence gate, not the source, decides
         whether a finding auto-files or waits for review.
@@ -66,7 +66,7 @@ export default function TransparencyPage() {
         No synthetic defect data. Training reference sets are the tenant&apos;s own
         photographs of good parts, enrolled per part family. The bundled dataset
         registry excludes anything without a redistribution-clean licence, and
-        EfficientAD is deliberately excluded on patent grounds — see the model
+        EfficientAD is deliberately excluded on patent grounds. See the model
         card for specifics.
       </Block>
 

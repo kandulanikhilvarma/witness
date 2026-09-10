@@ -60,7 +60,7 @@ export function RecordsTable({ records }: { records: WitnessRecord[] }) {
                   <SeverityChip level={effectiveSeverity(r)} />
                 </td>
                 <td className="px-3 py-2 tabular text-c-text-2">
-                  {r.review ? "—" : `${Math.round(r.confidence * 100)}%`}
+                  {r.review ? "n/a" : `${Math.round(r.confidence * 100)}%`}
                 </td>
                 <td className="px-3 py-2 tabular text-c-text-2">
                   {r.batchCode ? (
@@ -71,7 +71,7 @@ export function RecordsTable({ records }: { records: WitnessRecord[] }) {
                       {r.batchCode}
                     </Link>
                   ) : (
-                    "—"
+                    "n/a"
                   )}
                 </td>
                 <td className="px-3 py-2 tabular text-2xs text-c-text-3">
