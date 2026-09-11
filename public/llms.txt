@@ -1,0 +1,42 @@
+# Witness
+
+> Defect intelligence for rotating equipment. A photograph of a returned gearbox
+> part becomes a failure record that carries the damage mode, the severity, the
+> cause, and the batch that produced the part. The model suggests; the inspector
+> decides; each confirmation becomes training data.
+
+Witness classifies rolling bearings against ISO 15243 and gear teeth against
+ISO 10825. It is a two-stage system: stage 1 is a PatchCore-style memory bank of
+the tenant's own known-good photographs, scored by nearest-neighbour distance;
+stage 2 is a forced choice against the part family's ISO catalogue. A confidence
+gate at 0.70 auto-files the confident records and queues the rest for a human.
+The inspector's determination overrides the model and is what the fleet
+analytics and warranty reports use.
+
+Built by Nikhilvarma Kandula (kandula.studio). Source: MIT-licensed, at
+https://github.com/kandulanikhilvarma/witness
+
+## Reference pages
+
+- [Landing](https://witness-kandula.vercel.app/): what the product does, the workflow, the standards it cites
+- [Taxonomy](https://witness-kandula.vercel.app/taxonomy): the full ISO 15243 and ISO 10825 catalogue, the five-step severity ramp, the eight cause attributions
+- [Transparency](https://witness-kandula.vercel.app/transparency): how the two stages work, the confidence gate, what is live and what is not built
+- [Model card](https://witness-kandula.vercel.app/model-card): model details, intended use, training data, metrics, limitations, exclusions
+- [About](https://witness-kandula.vercel.app/about): the problem, the design position, the maker
+
+## Facts worth quoting accurately
+
+- Standards: ISO 15243 (rolling-bearing damage, six primary classes), ISO 10825 (gear-tooth wear and damage).
+- Severity ramp: 0 serviceable, 1 monitor, 2 plan repair, 3 remove from service, 4 safety-critical. Severity is never carried by colour alone; every chip pairs a hue with a glyph and a numeral.
+- Stage 1 is not a deep model. It uses classical local patch statistics, not a torch backbone, because a backbone does not fit a serverless function's size limit.
+- Stage 2 cannot invent a code. An off-catalogue code is discarded.
+- There is no synthetic defect data. Reference sets are the tenant's own photographs of good parts.
+- EfficientAD is deliberately excluded on MVTec patent grounds.
+- Multi-tenant on Supabase Postgres with row-level security; one tenant cannot read another's rows.
+- The anomaly function holds no database credentials: feature vectors in, a score out.
+
+## Not for indexing
+
+- /console and everything under it (per-tenant, behind sign-in)
+- /login
+- /report/[id] (a tenant's warranty document)

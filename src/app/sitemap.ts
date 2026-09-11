@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const SITE = "https://witness-kandula.vercel.app";
+import { SITE } from "@/lib/seo";
 
 // Public, unauthenticated routes only. The console lives behind sign-in and is
 // not a search target.

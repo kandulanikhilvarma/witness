@@ -1,13 +1,45 @@
 import { PublicShell } from "@/components/public-shell";
+import { TitleBlock } from "@/components/machinery";
+import { JsonLd, MAKER_ID, SITE, breadcrumb, graph, pageMeta, techArticle } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
   title: "Model card",
-  description: "Model card for the Witness two-stage defect classifier.",
-};
+  description:
+    "Model card for the Witness two-stage defect classifier: a PatchCore-style memory bank for stage 1, an ISO forced-choice classifier for stage 2, their intended use, metrics, exclusions and limits.",
+  path: "/model-card",
+  keywords: [
+    "model card",
+    "PatchCore anomaly detection",
+    "ISO 15243 classifier",
+    "responsible AI documentation",
+    "model limitations",
+  ],
+});
 
 export default function ModelCardPage() {
   return (
     <PublicShell>
+      <JsonLd
+        data={graph([
+          breadcrumb([{ name: "Model card", path: "/model-card" }]),
+          techArticle({
+            headline: "Witness two-stage defect classifier, model card",
+            description:
+              "Model details, intended use, training data, metrics, and limitations for the Witness classifier.",
+            path: "/model-card",
+            section: "Documentation",
+          }),
+          {
+            "@type": "SoftwareSourceCode",
+            "@id": `${SITE}/model-card#source`,
+            name: "Witness",
+            codeRepository: "https://github.com/kandulanikhilvarma/witness",
+            programmingLanguage: ["TypeScript", "Python"],
+            license: "https://github.com/kandulanikhilvarma/witness/blob/master/LICENSE",
+            author: { "@id": MAKER_ID },
+          },
+        ])}
+      />
       <p className="font-mono text-2xs uppercase tracking-[0.3em] text-brass">Documentation</p>
       <h1 className="mt-3 font-display text-4xl text-paper">Model card</h1>
       <p className="mt-4 max-w-2xl text-paper-2">
@@ -15,6 +47,10 @@ export default function ModelCardPage() {
         ISO failure modes. It is a two-stage system, and neither stage is a single
         trained checkpoint. This card documents both.
       </p>
+
+      <div className="mt-6">
+        <TitleBlock sheet="MC-01" title="Two-stage defect classifier" rev="B" />
+      </div>
 
       <Section title="Model details">
         <Field k="System" v="Witness two-stage defect classifier" />

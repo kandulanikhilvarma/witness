@@ -18,6 +18,13 @@ jobs:
       - run: npm run lint
       - run: npm run build # next build typechecks; generates .next/types (LayoutProps etc.)
       - run: node scripts/check-mermaid.mjs
+      # End to end against the built app. With no environment variables set, the
+      # app runs the keyless PGlite demo, so the whole ingest-to-export loop is
+      # exercised without a Supabase project or a model key.
+      - name: Smoke test the ingest loop
+        run: |
+          npm start &
+          npm test
 
   licences:
     runs-on: ubuntu-latest

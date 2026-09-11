@@ -7,7 +7,10 @@
     "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/smoke.mjs",
+    "diagrams": "node scripts/gen-diagrams.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

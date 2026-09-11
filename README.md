@@ -237,6 +237,7 @@ enforces it, so the rule cannot drift.
 | The interface is light mode only | `color-scheme: light`; there is no dark theme to keep in contrast parity |
 | No runtime font CDN | `next/font` self-hosts every face at build time; all faces are OFL |
 | The drawings cannot disagree with the app | One geometry module (`src/lib/mech.ts`) feeds both the live SVG and the README figures |
+| The structured data cannot disagree with the page | The taxonomy JSON-LD is built from `src/lib/iso.ts`, the same array that renders the table |
 
 ---
 
@@ -280,6 +281,44 @@ enforces it, so the rule cannot drift.
 
 ---
 
+## The JSON API
+
+Every route runs on the Node runtime, because `sharp` is a native module. Each
+route is auth-gated and row-level-security scoped, so a caller only ever reads
+or writes its own workspace.
+
+| Route | Method | Job |
+|-------|--------|-----|
+| `/api/ingest` | `POST` | A photo becomes an asset row with its EXIF, a provenance score, and a perceptual hash checked against the tenant's other assets for a re-sent duplicate |
+| `/api/score` | `POST` | Score one subject image against an enrolment's trained coreset. Stage 1 only: an anomaly score and a heat map |
+| `/api/classify` | `POST` | The stage-2 forced choice, then the confidence gate. A confident record auto-files; anything below the gate lands in the review queue |
+| `/api/records` | `GET`, `POST` | The local demo path: list records, or post an image to run the whole loop in one call |
+| `/api/records/[id]/review` | `POST` | The inspector's determination. It overrides the model and becomes authoritative |
+| `/api/batches` | `GET`, `POST` | List batches with their worst severity, or upsert a batch's provenance: line, produced-on date, supplier notes |
+| `/api/export/findings` | `GET` | Machine-readable findings for a warranty system or a BI tool. The crop data URIs are dropped to keep the payload lean |
+| `/api/export/labels` | `GET` | The training manifest: every confirmed record as a (model suggestion, human label) pair |
+
+---
+
+## Discovery
+
+The public pages carry the structured data an engine needs to cite one clause
+rather than a whole page.
+
+| Surface | What it declares |
+|---------|------------------|
+| `/sitemap.xml`, `/robots.txt` | The five public pages. The console, the sign-in page, and the per-tenant reports are disallowed |
+| `/llms.txt` | The answer-engine brief: what the system is, the facts worth quoting exactly, and which routes are private |
+| `/taxonomy` | Three `DefinedTermSet` graphs built from `src/lib/iso.ts`, so the structured data cannot drift from the table on the page |
+| `/transparency` | A `FAQPage` whose answers are the page's own visible prose |
+| `/model-card` | A `TechArticle` and the `SoftwareSourceCode` record for this repository |
+| `/`, `/about` | `SoftwareApplication` and `Person`, joined by `@id` across every page |
+
+One module, `src/lib/seo.tsx`, holds the canonical origin, the per-page metadata
+shape, and every structured-data builder.
+
+---
+
 ## Stack
 
 | Layer | Choice | Why |
@@ -292,7 +331,7 @@ enforces it, so the rule cannot drift.
 | Images | `sharp`, `exifr` | Native decode, EXIF, thumbnails, perceptual hash |
 | Validation | `zod` v4 | One schema guards the local record path |
 | Local database | PGlite (`@electric-sql/pglite`) | An in-process Postgres for the keyless local demo |
-| Typography | Jost, Cabin, JetBrains Mono, Fraunces | All OFL, all self-hosted by `next/font` at build time |
+| Typography | Metamorphous, Cabin, Jost, JetBrains Mono, Fraunces | All OFL, all self-hosted by `next/font` at build time |
 
 ---
 
@@ -303,6 +342,20 @@ npm install
 npm run dev            # http://localhost:3000
 npm run build && npm start
 ```
+
+### Check it
+
+```bash
+npm run lint           # eslint
+npm run typecheck      # tsc --noEmit
+npm test               # end-to-end smoke against a running server on :3000
+```
+
+`npm test` posts a synthesised image, reads the record back, upserts the batch,
+overrides the classification as an inspector would, and pulls the label export.
+It needs a server on port 3000 and no environment variables: with none set the
+app runs the keyless PGlite demo. CI runs the same command against the built
+app on every push.
 
 With **no environment variables**, the app runs the local PGlite demo. The demo
 seeds records and uses the heuristic classifier. To run the full Supabase system
@@ -325,7 +378,7 @@ The README figures are generated, not hand-drawn. To rebuild them after a change
 to `src/lib/mech.ts`, run one command:
 
 ```bash
-node scripts/gen-diagrams.ts
+npm run diagrams       # node scripts/gen-diagrams.ts
 ```
 
 The command writes the banner and the three figures to `docs/assets/`. The same

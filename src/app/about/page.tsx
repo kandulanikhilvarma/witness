@@ -1,22 +1,52 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { PublicShell } from "@/components/public-shell";
 import { WorkflowFigure } from "@/components/mechanical";
 import { ExplodedBearing } from "@/components/machinery";
+import { JsonLd, MAKER_ID, SITE, breadcrumb, graph, pageMeta } from "@/lib/seo";
 import { BEARING_MODES, GEAR_MODES, ATTRIBUTIONS, SEVERITY } from "@/lib/iso";
 
-export const metadata: Metadata = {
+export const metadata = pageMeta({
   title: "About",
   description:
-    "What Witness is, who it is for, how the two-stage detector works, and what it deliberately does not do.",
-};
+    "What Witness is, who it is for, how the two-stage detector works, and what it deliberately does not do. Built by Nikhilvarma Kandula, kandula.studio.",
+  path: "/about",
+  keywords: [
+    "Nikhilvarma Kandula",
+    "kandula.studio",
+    "defect intelligence",
+    "reliability engineering software",
+    "AI engineer",
+  ],
+});
 
 const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
 
 export default function AboutPage() {
   return (
     <PublicShell>
+      <JsonLd
+        data={graph([
+          breadcrumb([{ name: "About", path: "/about" }]),
+          {
+            "@type": "AboutPage",
+            "@id": `${SITE}/about#page`,
+            name: "About Witness",
+            url: `${SITE}/about`,
+            about: { "@id": `${SITE}/#app` },
+            mainEntity: { "@id": MAKER_ID },
+          },
+          {
+            "@type": "Person",
+            "@id": MAKER_ID,
+            name: "Nikhilvarma Kandula",
+            jobTitle: "Founder and AI engineer",
+            email: "mailto:kandulanikhilvarma@gmail.com",
+            url: "https://kandula.studio",
+            sameAs: ["https://kandula.studio", "https://github.com/kandulanikhilvarma"],
+          },
+        ])}
+      />
       <article className="space-y-14">
         <header>
           <p className="font-mono text-2xs uppercase tracking-[0.28em] text-brass">About</p>

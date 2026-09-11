@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Metamorphous, Jost, Cabin, JetBrains_Mono, Fraunces } from "next/font/google";
+import { SITE } from "@/lib/seo";
 import "./globals.css";
 
 // next/font downloads and self-hosts these at build time. The browser never
@@ -54,8 +55,6 @@ const fraunces = Fraunces({
   weight: ["400", "500", "600"],
   display: "swap",
 });
-
-const SITE = "https://witness-kandula.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),

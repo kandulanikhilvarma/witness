@@ -8,6 +8,12 @@ import { PrintButton } from "@/components/print-button";
 
 export const dynamic = "force-dynamic";
 
+// A tenant's warranty document. Behind sign-in, and never a search result.
+export const metadata = {
+  title: "Inspection report",
+  robots: { index: false, follow: false },
+};
+
 // A print-ready warranty / inspection report for one finding. Deliberately
 // outside the console rail and on white paper. The browser's Save-as-PDF turns
 // it into the document a warranty claim attaches. The ISO clause and the
