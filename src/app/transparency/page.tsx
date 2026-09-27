@@ -119,10 +119,11 @@ export default function TransparencyPage() {
           <h2 className="font-display text-xl text-paper">The gate is one number, and it is published</h2>
           <p className="mt-2 text-sm leading-6 text-paper-2">
             A stage-2 confidence at or above 0.70 auto-files the record. Anything
-            below it waits for an inspector. The threshold lives in one constant,
-            <span className="font-mono text-paper"> CONFIDENCE_GATE</span> in{" "}
-            <span className="font-mono text-paper">src/lib/stage2.ts</span>, so there
-            is no second, quieter rule somewhere else in the pipeline.
+            below it waits for an inspector. One more rule can only send work to a
+            person, never away from one: once inspectors have reviewed 20 findings
+            of a mode and kept the model&apos;s call less than 80% of the time, that
+            mode always queues. Both rules live in{" "}
+            <span className="font-mono text-paper">src/lib/gate.ts</span>.
           </p>
         </div>
       </section>

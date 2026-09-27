@@ -104,3 +104,34 @@ export function agreement(
   const agreed = byMode.reduce((s, m) => s + m.agreed, 0);
   return { byMode, reviewed, agreed };
 }
+
+/** Reviews a mode needs before its track record can override the gate. */
+export const MODE_TRACK_MIN_REVIEWS = 20;
+/** Below this inspector agreement, a mode never files itself. */
+export const MODE_TRACK_MIN_AGREEMENT = 0.8;
+
+/**
+ * Route a stage-2 result. The confidence gate is the first test. The second is
+ * the mode's own record: once inspectors have reviewed enough of a mode, and
+ * kept the model's call less than MODE_TRACK_MIN_AGREEMENT of the time, that
+ * mode goes to a person whatever confidence the model reports. Self-reported
+ * confidence is not a probability; the review history is.
+ */
+export function routeFinding(
+  confidence: number,
+  track: { reviewed: number; agreed: number } | null,
+): { state: "auto" | "queued"; reason: string } {
+  if (confidence < CONFIDENCE_GATE) {
+    return { state: "queued", reason: `confidence ${confidence.toFixed(2)} is below the ${CONFIDENCE_GATE} gate` };
+  }
+  if (track && track.reviewed >= MODE_TRACK_MIN_REVIEWS) {
+    const rate = track.agreed / track.reviewed;
+    if (rate < MODE_TRACK_MIN_AGREEMENT) {
+      return {
+        state: "queued",
+        reason: `inspectors kept this mode ${Math.round(rate * 100)}% of the time over ${track.reviewed} reviews`,
+      };
+    }
+  }
+  return { state: "auto", reason: `confidence ${confidence.toFixed(2)} clears the ${CONFIDENCE_GATE} gate` };
+}

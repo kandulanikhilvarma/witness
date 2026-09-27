@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BEARING_MODES, GEAR_MODES, SEVERITY, modeLabel, familyForStandard } from "./iso";
-import { CONFIDENCE_GATE, agreement, forceChoice, validReview, reviewStateLabel } from "./gate";
+import { CONFIDENCE_GATE, agreement, forceChoice, routeFinding, validReview, reviewStateLabel } from "./gate";
 import { applyFilter, countBy, crossTab, type Finding } from "./buckets";
 import { scoreProvenance, provenanceBand } from "./provenance";
 import { toCsv } from "./csv";
@@ -59,6 +59,20 @@ describe("validReview (inspector input guard)", () => {
   it("labels review states for people", () => {
     expect(reviewStateLabel("queued")).toBe("Awaiting review");
     expect(reviewStateLabel("weird")).toBe("weird");
+  });
+});
+
+describe("routeFinding (confidence gate + mode track record)", () => {
+  it("queues below the gate and files above it with no history", () => {
+    expect(routeFinding(0.69, null).state).toBe("queued");
+    expect(routeFinding(0.7, null).state).toBe("auto");
+  });
+  it("queues a confident call on a mode inspectors often overturn", () => {
+    expect(routeFinding(0.95, { reviewed: 40, agreed: 20 }).state).toBe("queued");
+    expect(routeFinding(0.95, { reviewed: 40, agreed: 38 }).state).toBe("auto");
+  });
+  it("ignores a track record too short to trust", () => {
+    expect(routeFinding(0.95, { reviewed: 5, agreed: 0 }).state).toBe("auto");
   });
 });
 

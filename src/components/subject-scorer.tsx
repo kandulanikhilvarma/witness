@@ -14,6 +14,7 @@ interface Result {
 interface Classification {
   id: string;
   routed: "auto" | "queued";
+  reason?: string;
   result: {
     modeCode: string;
     modeLabel: string;
@@ -233,6 +234,9 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
             <span className="tabular">{classification.result.confidence.toFixed(2)}</span> ·{" "}
             {classification.result.source}
           </p>
+          {classification.reason && (
+            <p className="mt-1 text-2xs text-c-text-2">Routed because {classification.reason}.</p>
+          )}
           <p className="mt-1 text-2xs text-c-text-3">{classification.result.rationale}</p>
           {classification.routed === "queued" && (
             <Link href="/console/review" className="mt-2 inline-block text-2xs text-c-focus hover:underline">
