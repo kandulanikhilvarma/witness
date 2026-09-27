@@ -80,3 +80,36 @@ export function crossTab(findings: Finding[], modeOrder: string[]): CrossTab {
 export function atypical(findings: Finding[]): Finding[] {
   return findings.filter((x) => !isTypicalCause(x.mode, x.attribution));
 }
+
+export interface RepeatSignal {
+  batch: string;
+  supplier: string | null;
+  mode: string;
+  standard: string;
+  count: number;
+  worst: number;
+}
+
+/**
+ * The fleet signal the product exists for: the same damage mode turning up
+ * again and again in one production batch. Each finding is counted once per
+ * batch it links to. Sorted worst first, then most frequent.
+ */
+export function repeatSignals(
+  rows: { mode: string; standard: string; severity: number; batches: { code: string; supplier: string | null }[] }[],
+  min = 3,
+): RepeatSignal[] {
+  const acc = new Map<string, RepeatSignal>();
+  for (const r of rows) {
+    for (const b of r.batches) {
+      const key = `${b.code}|${r.mode}`;
+      const s = acc.get(key) ?? { batch: b.code, supplier: b.supplier, mode: r.mode, standard: r.standard, count: 0, worst: 0 };
+      s.count += 1;
+      s.worst = Math.max(s.worst, r.severity);
+      acc.set(key, s);
+    }
+  }
+  return [...acc.values()]
+    .filter((s) => s.count >= min)
+    .sort((a, b) => b.worst - a.worst || b.count - a.count);
+}

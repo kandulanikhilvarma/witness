@@ -18,8 +18,11 @@ import {
   atypical,
   countBy,
   crossTab,
+  repeatSignals,
   type Finding,
+  type RepeatSignal,
 } from "@/lib/buckets";
+import { SeverityChip } from "@/components/severity-chip";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +30,14 @@ const SCAN = 2000;
 const SEV_TEXT = ["text-sev-0-ink", "text-sev-1-ink", "text-sev-2-ink", "text-sev-3-ink", "text-sev-4-ink"];
 const SEV_BG = ["bg-sev-0-bg", "bg-sev-1-bg", "bg-sev-2-bg", "bg-sev-3-bg", "bg-sev-4-bg"];
 
-type Row = { iso_standard: string; iso_mode: string; severity: number; attribution: string | null };
+type BatchRef = { batch_code: string; supplier: string | null };
+type Row = {
+  iso_standard: string;
+  iso_mode: string;
+  severity: number;
+  attribution: string | null;
+  finding_batch?: { batches: BatchRef | BatchRef[] | null }[];
+};
 
 function parseList(v: string | undefined): string[] {
   return v ? v.split(",").filter(Boolean) : [];
@@ -74,7 +84,10 @@ export default async function InsightsPage({
   const sp = await searchParams;
   const sb = await supabaseServer();
   const [{ data }, pairs] = await Promise.all([
-    sb.from("findings").select("iso_standard, iso_mode, severity, attribution").limit(SCAN),
+    sb
+      .from("findings")
+      .select("iso_standard, iso_mode, severity, attribution, finding_batch(batches(batch_code, supplier))")
+      .limit(SCAN),
     // Separate query: model_* exist only once the 2026-09-27 migration has run,
     // and the cube must still render on a database that has not had it yet.
     sb
@@ -145,6 +158,21 @@ export default async function InsightsPage({
         </p>
       ) : (
         <>
+          <RepeatPanel
+            signals={repeatSignals(
+              rows.map((r) => ({
+                mode: r.iso_mode,
+                standard: r.iso_standard,
+                severity: r.severity,
+                // Supabase types a nested to-one embed as an array without
+                // generated types; normalise both shapes.
+                batches: (r.finding_batch ?? [])
+                  .flatMap((fb) => (Array.isArray(fb.batches) ? fb.batches : fb.batches ? [fb.batches] : []))
+                  .map((b) => ({ code: b.batch_code, supplier: b.supplier })),
+              })),
+            )}
+          />
+
           {/* Attribution axis — the filter chips. */}
           <section className="mb-6">
             <h2 className="mb-2 text-2xs uppercase tracking-wide text-c-text-3">
@@ -342,6 +370,44 @@ function AgreementPanel({
           </table>
         </>
       )}
+    </section>
+  );
+}
+
+// The alert a quality engineer actually wants: one damage mode repeating in
+// one production batch. Three or more findings of a mode in a batch is a
+// pattern worth a supplier conversation, not a coincidence to file away.
+function RepeatPanel({ signals }: { signals: RepeatSignal[] }) {
+  if (signals.length === 0) return null;
+  return (
+    <section className="mb-6 rounded-sm border border-sev-3/40 bg-c-surface p-4" aria-labelledby="repeat-h">
+      <h2 id="repeat-h" className="text-2xs uppercase tracking-wide text-sev-3-ink">
+        ▲ {signals.length} repeat signal{signals.length === 1 ? "" : "s"}
+      </h2>
+      <p className="mt-1 text-2xs text-c-text-2">
+        The same damage mode three or more times in one batch. Open the batch and check the supplier
+        before more parts from it ship.
+      </p>
+      <ul className="mt-3 divide-y divide-c-line">
+        {signals.slice(0, 8).map((s) => (
+          <li key={`${s.batch}|${s.mode}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
+            <Link
+              href="/console/batches"
+              className="tabular text-c-text underline decoration-c-line underline-offset-2 hover:decoration-c-focus"
+            >
+              {s.batch}
+            </Link>
+            {s.supplier && <span className="text-2xs text-c-text-3">{s.supplier}</span>}
+            <span className="text-c-text-2">
+              <span className="tabular text-c-text-3">{s.mode}</span> {modeLabel(s.standard, s.mode)}
+            </span>
+            <span className="tabular text-c-text">× {s.count}</span>
+            <span className="ml-auto">
+              <SeverityChip level={s.worst} />
+            </span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

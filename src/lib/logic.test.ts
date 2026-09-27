@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BEARING_MODES, GEAR_MODES, SEVERITY, modeLabel, familyForStandard } from "./iso";
 import { CONFIDENCE_GATE, agreement, forceChoice, routeFinding, validReview, reviewStateLabel } from "./gate";
-import { applyFilter, countBy, crossTab, type Finding } from "./buckets";
+import { applyFilter, countBy, crossTab, repeatSignals, type Finding } from "./buckets";
 import { scoreProvenance, provenanceBand } from "./provenance";
 import { toCsv } from "./csv";
 import { parseCase } from "./cases";
@@ -149,5 +149,22 @@ describe("parseCase", () => {
   it("will not close a case without a disposition", () => {
     expect(parseCase(form({ rma: "R", status: "closed" })).ok).toBe(false);
     expect(parseCase(form({ rma: "R", status: "closed", disposition: "scrap" })).ok).toBe(true);
+  });
+});
+
+describe("repeatSignals", () => {
+  it("flags a mode repeating within one batch, worst first", () => {
+    const A = [{ code: "LOT-A", supplier: "S1" }];
+    const B = [{ code: "LOT-B", supplier: null }];
+    const rows = [
+      ...[1, 2, 3].map((severity) => ({ mode: "5.1", standard: "ISO 15243", severity, batches: A })),
+      ...[4, 4, 4, 4].map((severity) => ({ mode: "crack", standard: "ISO 10825", severity, batches: B })),
+      { mode: "5.3", standard: "ISO 15243", severity: 4, batches: A },
+    ];
+    const s = repeatSignals(rows);
+    expect(s.map((x) => [x.batch, x.mode, x.count, x.worst])).toEqual([
+      ["LOT-B", "crack", 4, 4],
+      ["LOT-A", "5.1", 3, 3],
+    ]);
   });
 });

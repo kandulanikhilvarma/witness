@@ -241,6 +241,8 @@ erDiagram
   findings }o--o{ batches : "finding_batch"
   tenants ||--o{ batches : "owns"
   tenants ||--o{ audit_events : "logs"
+  tenants ||--o{ cases : "tracks"
+  cases ||--o{ findings : "gathers"
 ```
 
 | Table | Holds |
@@ -249,6 +251,7 @@ erDiagram
 | `part_families`, `enrolments` | A kind of part and its known-good reference set; the trained coreset is stored inline on the enrolment |
 | `assets` | One uploaded photo: thumbnail, EXIF, provenance score, perceptual hash, and the path of the original in the `witness-originals` bucket |
 | `findings` | One classification: ISO mode, severity, attribution, confidence, review state, and the pinned `model_*` suggestion |
+| `cases` | One returned part: RMA number, customer, serial, run hours, return reason, status, and the disposition that closes it |
 | `batches`, `finding_batch` | Production lots and suppliers, linked many-to-many to findings |
 
 ### Where each part runs
@@ -317,7 +320,8 @@ enforces it, so the rule cannot drift.
 | `/console` | Findings, severity distribution, top modes, JSON export |
 | `/console/enrol` | Part families, reference sets, train coreset, score a subject |
 | `/console/review` | The low-confidence queue, worst and least certain first: confirm or correct |
-| `/console/insights` | The 3-axis cube (mode, severity, attribution) and model-against-inspector agreement |
+| `/console/insights` | Repeat signals (one mode, three or more times in one batch), the 3-axis cube, and model-against-inspector agreement |
+| `/console/cases` | Returned parts by RMA: open a case, attach its findings, close it with a disposition |
 | `/console/batches` | Batches and suppliers, findings per lot |
 | `/console/findings/[id]` | Inspection detail, ISO trace, batch link, warranty report |
 | `/report/[id]` | A print-ready warranty document |
@@ -330,6 +334,18 @@ Every route runs on the Node runtime, because `sharp` is a native module. Each
 Supabase route is auth-gated and row-level-security scoped, so a caller only
 ever reads or writes its own workspace. The local demo routes (`/api/records`,
 `/api/batches`) answer 404 when Supabase is configured.
+
+The intake form uploads the original straight from the browser to the private
+`witness-originals` bucket, into the tenant's own folder, named by its SHA-256.
+It then posts only the object path to `/api/ingest`, which reads the bytes back
+under the tenant's session and checks them against the hash in the name. The
+file never passes through a function body, so Vercel's 4.5 MB cap does not
+apply. A multipart upload is the fallback when storage is unavailable.
+
+A new anonymous workspace is seeded once with two part families, two batches
+and ten demo findings in every review state, so the first visit shows the
+product rather than an empty table. `witness.purge_anonymous_tenants()` deletes
+abandoned ones nightly (pg_cron) after seven days.
 
 Every image route checks the upload before it decodes it: 10 MB at most,
 40 megapixels at most, JPEG, PNG, WebP, HEIC, AVIF or TIFF. On Vercel the
@@ -427,6 +443,7 @@ npm run test:unit                # vitest: gate, review guard, buckets, provenan
 node scripts/check-contrast.mjs  # every text colour pair at WCAG AA
 python api/patchcore.py          # the anomaly function's self-check
 npm test                         # end-to-end smoke against a running server on :3000
+npm run test:e2e                 # Playwright + axe in Chromium; starts its own server (build first)
 ```
 
 `npm test` posts a synthesised image, reads the record back, upserts the batch,
@@ -480,7 +497,7 @@ and turn on anonymous sign-ins (Auth settings) for the demo path.
 | On Windows, `next dev --turbopack` panics spawning the PostCSS worker (`0xc0000142`) and pages return 500 | A Turbopack worker issue on Windows | `npm run dev` already uses `--webpack`. `npm run build` and `npm start` are not affected |
 | Sign-in fails, or the console shows "This view could not load" | The free-tier Supabase project is paused after a week without traffic | Restore it in the Supabase dashboard |
 | Scoring returns `unauthorized` | `PATCHCORE_TOKEN` is not set, or differs between the two runtimes | Set the same value for the whole Vercel project and redeploy |
-| An upload returns 413 | The photo is over Vercel's 4.5 MB request cap | Export a smaller copy. Scoring resizes in the browser and is not affected |
+| An upload returns 413 | Direct upload to storage was unavailable, so the form fell back to posting the file through a function, which Vercel caps at 4.5 MB | Apply the storage migration; direct upload then carries files up to 10 MB |
 | Insights shows "Needs the model-suggestion columns" | The 2026-09-27 migration has not run | `npx supabase db push` |
 
 ### Build the diagrams
@@ -534,9 +551,14 @@ Witness is live on Vercel. It auto-deploys from `master`:
 - [x] Originals kept by SHA-256; upload limits; per-workspace classify quota
 - [ ] A **trained, diagnostic** stage-1 backbone. This is blocked on labelled
   data, which the review loop collects.
-- [ ] Per-mode gate thresholds set from the agreement table
-- [ ] Case records (one returned part, many photos, RMA metadata, disposition)
-- [ ] Direct browser-to-storage upload, so full-size originals skip the 4.5 MB cap
-- [ ] Roles and invites; a seeded demo workspace for first visits
+- [x] A mode's review record can veto an auto-file (20+ reviews, under 80% kept)
+- [x] Cases: RMA, customer, serial, run hours, findings, disposition
+- [x] Direct browser-to-storage upload; the original is hashed and read back by path
+- [x] Seeded demo workspace for anonymous visitors; nightly purge of abandoned ones
+- [x] Repeat signals: one mode repeating in one batch
+- [x] Playwright and axe in CI; structured server-error log lines
+- [ ] Roles and invites (inspector, lead, viewer)
+- [ ] Server-rendered PDF warranty report with the original photo and sign-off
+- [ ] Repeat signals delivered by email or webhook, not only on screen
 
 The design system and the structure are in `docs/witness-slice-report.md`.
