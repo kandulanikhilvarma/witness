@@ -20,6 +20,15 @@ jobs:
       - run: node scripts/check-contrast.mjs # design tokens must keep text at WCAG AA
       - run: npm run build # next build typechecks; generates .next/types (LayoutProps etc.)
       - run: node scripts/check-mermaid.mjs
+      # Browser run with axe: public pages, the console upload loop, a phone
+      # viewport. Playwright starts and stops its own server on :3000.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: playwright-traces
+          path: e2e/test-results
       # End to end against the built app. With no environment variables set, the
       # app runs the keyless PGlite demo, so the whole ingest-to-export loop is
       # exercised without a Supabase project or a model key.

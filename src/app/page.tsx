@@ -104,10 +104,10 @@ function Hero() {
 
 function Metric({ value, label }: { value: string; label: string }) {
   return (
-    <div>
-      <dt className="sr-only">{label}</dt>
-      <dd className="font-display text-3xl tabular text-paper">{value}</dd>
-      <p className="mt-1 text-2xs uppercase tracking-[0.14em] text-iron">{label}</p>
+    // dt must precede dd in the markup; flex order puts the figure on top.
+    <div className="flex flex-col">
+      <dt className="order-2 mt-1 text-2xs uppercase tracking-[0.14em] text-iron">{label}</dt>
+      <dd className="order-1 font-display text-3xl tabular text-paper">{value}</dd>
     </div>
   );
 }

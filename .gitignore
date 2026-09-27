@@ -42,3 +42,9 @@ next-env.d.ts
 
 # Local Claude Code session state
 .claude/
+
+# Playwright
+/e2e/test-results/
+/e2e/playwright-report/
+/test-results/
+/playwright-report/
