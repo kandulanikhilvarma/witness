@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { LocalTime } from "@/components/local-time";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRecord } from "@/lib/db";
@@ -28,7 +29,7 @@ export default async function RecordDetail({
     : [];
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8">
       <Link href="/console" className="text-2xs text-c-text-3 hover:text-c-text">
         ← Records
       </Link>
@@ -56,7 +57,7 @@ export default async function RecordDetail({
           <Field label="Classification">
             <span className="tabular text-c-text-3">{eff.code}</span> {eff.label}{" "}
             {rec.review ? (
-              <span className="text-2xs text-sev-0">· confirmed</span>
+              <span className="text-2xs text-sev-0-ink">· confirmed</span>
             ) : (
               <span className="text-2xs text-c-text-3">· model, unconfirmed</span>
             )}
@@ -83,12 +84,12 @@ export default async function RecordDetail({
             </span>
           </Field>
           <Field label="Inspected">
-            <span className="tabular">{new Date(rec.createdAt).toLocaleString()}</span>
+            <span className="tabular"><LocalTime iso={new Date(rec.createdAt).toISOString()} /></span>
           </Field>
           {rec.review && (
             <Field label="Reviewed">
               <span className="tabular">
-                {new Date(rec.review.reviewedAt).toLocaleString()}
+                <LocalTime iso={new Date(rec.review.reviewedAt).toISOString()} />
               </span>
             </Field>
           )}

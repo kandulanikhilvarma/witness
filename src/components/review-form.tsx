@@ -81,16 +81,16 @@ export function ReviewForm({
       <button
         type="submit"
         disabled={busy}
-        className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-paper disabled:opacity-50"
+        className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-oxide-deep disabled:opacity-50"
       >
         {busy ? "Saving…" : "Confirm classification"}
       </button>
       {error && (
-        <p className="w-full text-2xs text-sev-3" role="alert">
+        <p className="w-full text-2xs text-sev-3-ink" role="alert">
           {error}
         </p>
       )}
-      {ok && !error && <p className="w-full text-2xs text-sev-0">Recorded.</p>}
+      {ok && !error && <p className="w-full text-2xs text-sev-0-ink">Recorded.</p>}
     </form>
   );
 }

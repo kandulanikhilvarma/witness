@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { LocalTime } from "@/components/local-time";
 import Link from "next/link";
 import {
   type WitnessRecord,
@@ -29,7 +30,7 @@ export function RecordsTable({ records }: { records: WitnessRecord[] }) {
           {records.map((r) => {
             const mode = effectiveMode(r);
             return (
-              <tr key={r.id} className="border-t border-c-line align-middle">
+              <tr key={r.id} className="border-t border-c-line align-middle transition-colors hover:bg-c-surface-2">
                 <td className="px-3 py-2">
                   <Link
                     href={`/console/records/${r.id}`}
@@ -75,7 +76,7 @@ export function RecordsTable({ records }: { records: WitnessRecord[] }) {
                   )}
                 </td>
                 <td className="px-3 py-2 tabular text-2xs text-c-text-3">
-                  {new Date(r.createdAt).toLocaleString()}
+                  <LocalTime iso={new Date(r.createdAt).toISOString()} />
                 </td>
               </tr>
             );

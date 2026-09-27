@@ -17,15 +17,22 @@ export function IntakeForm({ enrolmentId }: { enrolmentId?: string } = {}) {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Read the form now: React clears currentTarget once the handler yields.
+    const form = e.currentTarget;
     setError(null);
     setResult(null);
     setBusy(true);
     try {
-      const res = await fetch("/api/ingest", { method: "POST", body: new FormData(e.currentTarget) });
+      const res = await fetch("/api/ingest", { method: "POST", body: new FormData(form) });
+      // ponytail: Vercel rejects request bodies over 4.5 MB before our route
+      // runs, so a full-size phone original cannot pass through a function.
+      // Upgrade path: a signed upload URL straight to the witness-originals
+      // bucket, then POST only the object path here.
+      if (res.status === 413) throw new Error("That photo is over the 4.5 MB upload limit. Export it at a smaller size and try again.");
       const body = await res.json();
       if (!res.ok) throw new Error(body?.error ?? `Upload failed (${res.status}).`);
       setResult(body as Result);
-      e.currentTarget.reset();
+      form.reset();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
@@ -69,14 +76,14 @@ export function IntakeForm({ enrolmentId }: { enrolmentId?: string } = {}) {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-paper disabled:opacity-50"
+          className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-oxide-deep disabled:opacity-50"
         >
           {busy ? "Reading…" : enrolmentId ? "Add reference" : "Ingest photo"}
         </button>
       </form>
 
       {error && (
-        <p className="mt-2 text-2xs text-sev-3" role="alert">
+        <p className="mt-2 text-2xs text-sev-3-ink" role="alert">
           {error}
         </p>
       )}
@@ -84,12 +91,12 @@ export function IntakeForm({ enrolmentId }: { enrolmentId?: string } = {}) {
         <p className="mt-2 text-2xs text-c-text-2">
           Ingested · provenance {result.provenance.score}/100.{" "}
           {result.duplicate ? (
-            <span className="text-sev-2">
+            <span className="text-sev-2-ink">
               Near-duplicate of {result.nearest?.image_name ?? "an existing photo"} (
               {result.nearest?.distance} bits apart).
             </span>
           ) : (
-            <span className="text-sev-0">No duplicate found.</span>
+            <span className="text-sev-0-ink">No duplicate found.</span>
           )}
         </p>
       )}

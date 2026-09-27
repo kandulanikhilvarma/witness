@@ -24,13 +24,19 @@ interface Classification {
   };
 }
 
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = () => resolve(fr.result as string);
-    fr.onerror = () => reject(fr.error);
-    fr.readAsDataURL(file);
-  });
+// A phone photo is 4 to 8 MB, and base64 grows it by a third, which is past
+// Vercel's 4.5 MB request cap. Scoring works at 96 px and the vision model at
+// 1024 px, so a 1600 px JPEG loses nothing either stage uses. Orientation is
+// applied from EXIF by createImageBitmap.
+async function toScoringDataUrl(file: File, edge = 1600): Promise<string> {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, edge / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bmp.width * k);
+  canvas.height = Math.round(bmp.height * k);
+  canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
+  return canvas.toDataURL("image/jpeg", 0.88);
 }
 
 // Score a candidate part against the trained reference set. The heatmap is the
@@ -43,16 +49,18 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
   const [image, setImage] = useState<string | null>(null);
   const [classifying, setClassifying] = useState(false);
   const [classification, setClassification] = useState<Classification | null>(null);
+  const [overlay, setOverlay] = useState(55);
 
   async function onChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = ""; // choosing the same file again still scores
     if (!file) return;
     setError(null);
     setResult(null);
     setClassification(null);
     setBusy(true);
     try {
-      const dataUri = await readAsDataUrl(file);
+      const dataUri = await toScoringDataUrl(file);
       setImage(dataUri);
       const res = await fetch("/api/score", {
         method: "POST",
@@ -101,23 +109,38 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
             ISO call comes later.
           </p>
         </div>
-        <label className="cursor-pointer rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-paper">
-          {busy ? "Scoring…" : "Choose photo"}
-          <input type="file" accept="image/*" onChange={onChange} disabled={busy} className="hidden" />
-        </label>
+        <div className="flex gap-2">
+          <label className="press cursor-pointer rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-on-accent transition-colors focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-c-focus hover:bg-oxide-deep">
+            {busy ? "Scoring…" : "Choose photo"}
+            <input type="file" accept="image/*" onChange={onChange} disabled={busy} className="sr-only" />
+          </label>
+          {/* On a phone this opens the rear camera directly; on a desktop it
+              behaves as a second file picker, so it is shown on small screens only. */}
+          <label className="press cursor-pointer rounded-sm border border-c-line bg-c-surface-2 px-4 py-2 text-sm text-c-text focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-c-focus hover:border-c-focus sm:hidden">
+            Take photo
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={onChange}
+              disabled={busy}
+              className="sr-only"
+            />
+          </label>
+        </div>
       </div>
 
       {error && (
-        <p className="mt-2 text-2xs text-sev-3" role="alert">
+        <p className="mt-2 text-2xs text-sev-3-ink" role="alert">
           {error}
         </p>
       )}
 
       {result && (
-        <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto]">
+        <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_minmax(0,280px)]" aria-live="polite">
           <div>
             <div
-              className={`font-display text-2xl tabular ${result.anomalous ? "text-sev-3" : "text-sev-0"}`}
+              className={`font-display text-2xl tabular ${result.anomalous ? "text-sev-3-ink" : "text-sev-0-ink"}`}
             >
               {result.anomalous ? "Anomalous" : "Within normal"}
             </div>
@@ -127,26 +150,55 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
               threshold. Above 1.0× reads as anomalous.
             </p>
           </div>
-          <div
-            className="grid gap-px rounded-sm border border-c-line p-1"
-            style={{ gridTemplateColumns: `repeat(${result.heatmap.length}, 12px)` }}
-            aria-label="anomaly heatmap"
-          >
-            {result.heatmap.flat().map((v, i) => (
+          {/* The heatmap sits on the photo it was computed from. The scorer
+              resizes the whole frame to a square grid, so each cell covers the
+              same fraction of the photo in both axes. */}
+          <figure className="m-0">
+            <div className="relative overflow-hidden rounded-sm border border-c-line">
+              {image && (
+                // eslint-disable-next-line @next/next/no-img-element -- a local data URI; next/image adds nothing here
+                <img src={image} alt="Scored subject" className="block h-auto w-full" />
+              )}
               <div
-                key={i}
-                title={v.toFixed(2)}
-                className="h-3 w-3 rounded-[1px]"
-                style={{ background: `color-mix(in oklab, var(--color-sev-4) ${Math.round((v / hot) * 100)}%, var(--color-c-surface-2))` }}
+                className="heat-in absolute inset-0 grid"
+                style={{
+                  gridTemplateColumns: `repeat(${result.heatmap[0]?.length ?? 1}, 1fr)`,
+                  opacity: overlay / 100,
+                }}
+                role="img"
+                aria-label={`Anomaly heatmap. Hottest cell ${hot.toFixed(2)}.`}
+              >
+                {result.heatmap.flat().map((v, i) => (
+                  <div
+                    key={i}
+                    title={v.toFixed(2)}
+                    style={{
+                      background: `color-mix(in oklab, var(--color-sev-4) ${Math.round((v / hot) * 100)}%, transparent)`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <label className="mt-2 flex items-center gap-2 text-2xs text-c-text-3">
+              Heatmap
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={overlay}
+                onChange={(e) => setOverlay(Number(e.target.value))}
+                className="flex-1 accent-[var(--color-c-focus)]"
               />
-            ))}
-          </div>
+              <span className="w-8 text-right tabular">{overlay}%</span>
+            </label>
+          </figure>
         </div>
       )}
 
       {result && !classification && (
         <div className="mt-4 flex items-center gap-3 border-t border-c-line pt-4">
           <button
+            type="button"
             onClick={classify}
             disabled={classifying}
             className="rounded-sm border border-c-line bg-c-surface-2 px-4 py-2 text-sm text-c-text hover:border-c-focus disabled:opacity-50"
@@ -169,8 +221,8 @@ export function SubjectScorer({ enrolId }: { enrolId: string }) {
             <span
               className={`rounded-sm border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wide ${
                 classification.routed === "auto"
-                  ? "border-sev-0/40 bg-sev-0-bg text-sev-0"
-                  : "border-sev-1/40 bg-sev-1-bg text-sev-1"
+                  ? "border-sev-0/40 bg-sev-0-bg text-sev-0-ink"
+                  : "border-sev-1/40 bg-sev-1-bg text-sev-1-ink"
               }`}
             >
               {classification.routed === "auto" ? "auto-filed" : "queued for review"}

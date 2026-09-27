@@ -3,7 +3,8 @@ import type { CSSProperties } from "react";
 import { SEVERITY, BEARING_MODES, GEAR_MODES, ATTRIBUTIONS } from "@/lib/iso";
 import { SiteHeader, SiteFooter } from "@/components/public-shell";
 import { BearingFigure, GearMeshFigure, WorkflowFigure } from "@/components/mechanical";
-import { ExplodedBearing, SpecPlate, GaugeDial, TitleBlock } from "@/components/machinery";
+import { ExplodedBearing, GaugeDial, TitleBlock } from "@/components/machinery";
+import { CONFIDENCE_GATE } from "@/lib/gate";
 import { ControlStrip } from "@/components/control-strip";
 
 // Marketing regime: warm paper, ink, one gauge-teal accent. The console stays
@@ -17,9 +18,15 @@ const stagger = (i: number) => ({ "--i": i }) as CSSProperties;
 
 export default function Home() {
   return (
-    <div className="flex min-h-full flex-1 flex-col bg-ground text-paper">
+    <div className="relative flex min-h-full flex-1 flex-col bg-ground text-paper">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-oxide focus:px-4 focus:py-2 focus:text-sm focus:text-on-accent"
+      >
+        Skip to content
+      </a>
       <SiteHeader />
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         <Hero />
         <Objectives />
         <Workflow />
@@ -62,7 +69,7 @@ function Hero() {
               href="/console"
               className="rounded-sm bg-oxide px-6 py-3 text-base font-medium text-on-accent transition-colors hover:bg-oxide-deep"
             >
-              Open the console
+              Try the demo workspace
             </Link>
             <Link
               href="/about"
@@ -136,7 +143,7 @@ function Objectives() {
         {OBJECTIVES.map((o, i) => (
           <li
             key={o.n}
-            className="reveal lift rounded-md border border-iron/20 bg-ground-2 p-6"
+            className="reveal rounded-md border border-iron/20 bg-ground-2 p-6"
             style={stagger(i)}
           >
             <span className="font-mono text-2xs tracking-[0.2em] text-oxide">{o.n}</span>
@@ -192,7 +199,12 @@ function Workflow() {
           <WorkflowFigure className="w-full" />
         </div>
         <div className="flex flex-col items-center justify-center rounded-md border border-iron/20 bg-ground-2 p-5 shadow-[var(--shadow-raise)]">
-          <GaugeDial value={0.82} display="0.82" label="gate threshold" className="w-40" />
+          <GaugeDial
+            value={CONFIDENCE_GATE}
+            display={CONFIDENCE_GATE.toFixed(2)}
+            label="gate threshold"
+            className="w-40"
+          />
           <p className="mt-1 max-w-[13rem] text-center text-2xs leading-5 text-paper-2">
             Score above the threshold files itself. Below it queues for a person.
           </p>
@@ -203,7 +215,7 @@ function Workflow() {
         {STEPS.map((s, i) => (
           <li
             key={s.n}
-            className="reveal lift rounded-md border border-iron/20 bg-ground-2 p-5"
+            className="reveal rounded-md border border-iron/20 bg-ground-2 p-5"
             style={stagger(i)}
           >
             <div className="flex items-center gap-2">
@@ -272,12 +284,14 @@ function Standards() {
         </p>
         <ul className="mt-4 flex flex-wrap gap-2">
           {ATTRIBUTIONS.map((a) => (
-            <li
-              key={a.code}
-              title={a.blurb}
-              className="rounded-sm border border-iron/25 bg-ground px-3 py-1.5 text-sm text-paper-2 transition-colors hover:border-oxide hover:text-paper"
-            >
-              {a.label}
+            <li key={a.code}>
+              <Link
+                href="/taxonomy#attribution"
+                title={a.blurb}
+                className="press block rounded-sm border border-iron/25 bg-ground px-3 py-1.5 text-sm text-paper-2 transition-colors hover:border-oxide hover:text-paper"
+              >
+                {a.label}
+              </Link>
             </li>
           ))}
         </ul>
@@ -293,55 +307,6 @@ function Standards() {
         </div>
       </div>
 
-      <div className="mt-4">
-        <p className="font-mono text-2xs uppercase tracking-[0.28em] text-brass">Reference geometry</p>
-        <div className="mt-3 grid gap-4 md:grid-cols-2">
-          <SpecPlate
-            drawing="bolt"
-            code="FIG. 4-A"
-            title="Fastener"
-            rows={[
-              { k: "Thread", v: "M12 × 1.75" },
-              { k: "Grade", v: "10.9" },
-              { k: "Head", v: "hex, 19 A/F" },
-              { k: "Torque", v: "86 N·m" },
-            ]}
-          />
-          <SpecPlate
-            drawing="shaft"
-            code="FIG. 4-B"
-            title="Shaft seat"
-            rows={[
-              { k: "Diameter", v: "Ø 20 h6" },
-              { k: "Fit", v: "k5 interference" },
-              { k: "Ra", v: "0.4 µm" },
-              { k: "Runout", v: "0.010 mm" },
-            ]}
-          />
-          <SpecPlate
-            drawing="spring"
-            code="FIG. 4-C"
-            title="Preload spring"
-            rows={[
-              { k: "Free length", v: "84 mm" },
-              { k: "Rate", v: "12 N/mm" },
-              { k: "Wire", v: "Ø 2.5 mm" },
-              { k: "Ends", v: "closed, ground" },
-            ]}
-          />
-          <SpecPlate
-            drawing="flange"
-            code="FIG. 4-D"
-            title="Housing flange"
-            rows={[
-              { k: "Bolt circle", v: "Ø 68 mm" },
-              { k: "Holes", v: "6 × Ø 9" },
-              { k: "Pilot", v: "Ø 36 H7" },
-              { k: "Material", v: "EN-GJL-250" },
-            ]}
-          />
-        </div>
-      </div>
     </Section>
   );
 }
@@ -357,14 +322,12 @@ function SeverityRamp() {
     >
       <ol className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {SEVERITY.map((s, i) => (
-          <li
-            key={s.level}
-            className="reveal lift rounded-md border border-iron/20 bg-ground-2 px-4 py-4"
-            style={{
-              ...stagger(i),
-              borderTop: `3px solid var(--color-sev-${s.level})`,
-            }}
-          >
+          <li key={s.level} className="reveal" style={stagger(i)}>
+            <Link
+              href="/taxonomy#severity"
+              className="lift press block h-full rounded-md border border-iron/20 bg-ground-2 px-4 py-4 hover:border-oxide/50"
+              style={{ borderTop: `3px solid var(--color-sev-${s.level})` }}
+            >
             <div className="flex items-baseline gap-2">
               <span
                 className="font-mono text-xl leading-none"
@@ -377,6 +340,7 @@ function SeverityRamp() {
             </div>
             <h3 className="mt-2.5 font-display text-base">{s.label}</h3>
             <p className="mt-1 text-2xs leading-5 text-paper-2">{s.action}</p>
+            </Link>
           </li>
         ))}
       </ol>
@@ -431,7 +395,7 @@ function Capabilities() {
         {CAPABILITIES.map((c, i) => (
           <article
             key={c.kicker}
-            className="reveal lift rounded-md border border-iron/20 bg-ground-2 p-6"
+            className="reveal rounded-md border border-iron/20 bg-ground-2 p-6"
             style={stagger(i)}
           >
             <div className="font-mono text-2xs uppercase tracking-[0.2em] text-brass">{c.kicker}</div>
@@ -462,7 +426,7 @@ function Close() {
               href="/console"
               className="rounded-sm bg-oxide px-6 py-3 font-medium text-on-accent transition-colors hover:bg-oxide-deep"
             >
-              Open the console
+              Try the demo workspace
             </Link>
             <Link
               href="/taxonomy"

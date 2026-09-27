@@ -35,7 +35,7 @@
   --color-oxide: #0e6e78; /* brand accent — gauge teal (off the severity ramp) */
   --color-oxide-deep: #0a5158; /* pressed / hover */
   --color-on-accent: #ffffff; /* text and glyphs that sit on the accent */
-  --color-brass: #8a6d25; /* secondary accent, kickers, rules */
+  --color-brass: #7a5f1c; /* secondary accent, kickers, rules (5.4:1 on ground) */
   --color-verdigris: #2f6f52; /* tertiary, positive proof */
 
   /* --- Console regime: ISA-101, light ------------------------------------- */
@@ -45,7 +45,7 @@
   --color-c-line: #d9d5cc;
   --color-c-text: #23201b;
   --color-c-text-2: #5c564c;
-  --color-c-text-3: #8a8377;
+  --color-c-text-3: #6a6358; /* meta text: 4.9:1 on c-ground, 5.8:1 on white */
   --color-c-focus: #0e6e78; /* focus ring + single primary action ONLY */
 
   /* --- Severity ramp ------------------------------------------------------
@@ -66,14 +66,26 @@
   --color-sev-3-bg: #f7ddd5;
   --color-sev-4-bg: #f2d3ce;
 
+  /* Text-weight severity inks. The hues above are for bars, glyphs and rules;
+     small text (chips, table cells) uses these darker inks so it clears AA 4.5:1
+     on both the tints and white. */
+  --color-sev-0-ink: #346641;
+  --color-sev-1-ink: #735a12;
+  --color-sev-2-ink: #8a4a0b;
+  --color-sev-3-ink: #a52c17;
+  --color-sev-4-ink: #8a1410;
+
   /* --- Typography ---------------------------------------------------------
      All open-licence (OFL), all self-hosted by next/font at build time.
      No runtime CDN request. No Inter, no Roboto. */
+  /* Three families. figure and editorial are roles, not faces: both resolve to
+     Cabin so the page loads three fonts, not five. Point a role at its own face
+     again here if one ever earns it. */
   --font-display: var(--font-metamorphous), ui-serif, Georgia, serif;
-  --font-figure: var(--font-jost), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-cabin), ui-sans-serif, system-ui, sans-serif;
+  --font-figure: var(--font-sans);
+  --font-editorial: var(--font-sans);
   --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
-  --font-editorial: var(--font-fraunces), ui-serif, Georgia, serif;
 
   /* Major third, 1.250. */
   --text-2xs: 0.75rem; /* 12 — meta, table captions */
@@ -144,6 +156,25 @@ h3 {
   letter-spacing: -0.01em;
 }
 
+/* The console is an instrument, not a brochure: its headings drop the engraved
+   display face for the body face at weight. */
+.console h1,
+.console h2,
+.console h3 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Press and disabled feedback for every button, once. */
+button:not(:disabled):active,
+.press:active {
+  transform: translateY(1px);
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* One visible focus treatment across the whole product. The accent is spent here. */
 :focus-visible {
   outline: 2px solid var(--color-c-focus);
@@ -160,7 +191,8 @@ h3 {
    Declared once so every surface moves the same way. The console does NOT use
    .lift; the bench stays still. */
 
-/* A card that rises a hair on hover. Warm shadow, short ease. */
+/* A card that rises a hair on hover. Warm shadow, short ease. Only on things
+   that navigate: a card that lifts and then does nothing is a false promise. */
 .lift {
   transition:
     transform var(--duration-state) var(--ease-out-quart),
@@ -198,6 +230,38 @@ h3 {
 .reveal {
   animation: rise-in var(--duration-entry) var(--ease-out-quart) both;
   animation-delay: calc(var(--i, 0) * 70ms);
+}
+/* Where the browser supports scroll-driven animation, a section rises as it
+   enters the viewport instead of on page load, so content below the fold is
+   not already finished animating by the time anyone scrolls to it. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation-duration: auto;
+    animation-delay: 0s;
+    animation-timeline: view();
+    animation-range: entry calc(var(--i, 0) * 4%) entry calc(60% + var(--i, 0) * 4%);
+  }
+}
+
+/* The anomaly heatmap fades onto the photo once the score lands. */
+@keyframes heat-in {
+  from {
+    opacity: 0;
+  }
+}
+.heat-in {
+  animation: heat-in var(--duration-panel) var(--ease-out-quart);
+}
+
+/* A gauge needle sweeps from zero to its reading once. */
+@keyframes needle-sweep {
+  from {
+    transform: rotate(var(--sweep-from, 0deg));
+  }
+}
+.needle-sweep {
+  transform-box: view-box;
+  animation: needle-sweep 700ms var(--ease-out-expo) both;
 }
 
 /* Blueprint texture. Marketing section breaks only — never in the console. */

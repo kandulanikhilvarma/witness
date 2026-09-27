@@ -5,11 +5,11 @@ import { severity as sevInfo } from "@/lib/iso";
 // the three survives if the others fail: deuteranopia, greyscale print, a
 // blown-out console.
 const STYLES: Record<number, { fg: string; bg: string; bd: string }> = {
-  0: { fg: "text-sev-0", bg: "bg-sev-0-bg", bd: "border-sev-0/40" },
-  1: { fg: "text-sev-1", bg: "bg-sev-1-bg", bd: "border-sev-1/40" },
-  2: { fg: "text-sev-2", bg: "bg-sev-2-bg", bd: "border-sev-2/40" },
-  3: { fg: "text-sev-3", bg: "bg-sev-3-bg", bd: "border-sev-3/40" },
-  4: { fg: "text-sev-4", bg: "bg-sev-4-bg", bd: "border-sev-4/50" },
+  0: { fg: "text-sev-0-ink", bg: "bg-sev-0-bg", bd: "border-sev-0/40" },
+  1: { fg: "text-sev-1-ink", bg: "bg-sev-1-bg", bd: "border-sev-1/40" },
+  2: { fg: "text-sev-2-ink", bg: "bg-sev-2-bg", bd: "border-sev-2/40" },
+  3: { fg: "text-sev-3-ink", bg: "bg-sev-3-bg", bd: "border-sev-3/40" },
+  4: { fg: "text-sev-4-ink", bg: "bg-sev-4-bg", bd: "border-sev-4/50" },
 };
 
 export function SeverityChip({ level }: { level: number }) {

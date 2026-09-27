@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { SubmitButton } from "@/components/submit-button";
+import { LocalTime } from "@/components/local-time";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { listBatches } from "@/lib/db";
@@ -30,7 +32,7 @@ export default async function BatchesPage() {
   const batches = await listBatches();
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-6">
         <h1 className="font-display text-2xl">Batches</h1>
         <p className="mt-1 text-sm text-c-text-2">
@@ -82,7 +84,7 @@ export default async function BatchesPage() {
                     {b.parts > 0 ? <SeverityChip level={b.worstSeverity} /> : "n/a"}
                   </td>
                   <td className="px-3 py-2 tabular text-2xs text-c-text-3">
-                    {b.lastSeen ? new Date(b.lastSeen).toLocaleString() : "n/a"}
+                    {b.lastSeen ? <LocalTime iso={new Date(b.lastSeen).toISOString()} /> : "n/a"}
                   </td>
                 </tr>
               ))}
@@ -94,14 +96,14 @@ export default async function BatchesPage() {
   );
 }
 
-const SEV_TEXT = ["text-sev-0", "text-sev-1", "text-sev-2", "text-sev-3", "text-sev-4"];
+const SEV_TEXT = ["text-sev-0-ink", "text-sev-1-ink", "text-sev-2-ink", "text-sev-3-ink", "text-sev-4-ink"];
 
 async function SupabaseBatches() {
   if (!(await currentSession())) redirect("/login");
   const batches = await listBatchStats();
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-6">
         <h1 className="font-display text-2xl">Batches &amp; suppliers</h1>
         <p className="mt-1 text-sm text-c-text-2">
@@ -118,7 +120,7 @@ async function SupabaseBatches() {
         <input name="supplier" placeholder="Supplier" className="rounded-sm border border-c-line bg-c-surface-2 px-2 py-1.5 text-sm text-c-text placeholder:text-c-text-3" />
         <input name="plant" placeholder="Plant" className="rounded-sm border border-c-line bg-c-surface-2 px-2 py-1.5 text-sm text-c-text placeholder:text-c-text-3" />
         <input name="produced_at" type="date" className="rounded-sm border border-c-line bg-c-surface-2 px-2 py-1.5 text-sm text-c-text" />
-        <button className="rounded-sm bg-c-focus px-3 py-1.5 text-sm font-medium text-paper">Add batch</button>
+        <SubmitButton pending="Adding…">Add batch</SubmitButton>
       </form>
 
       {batches.length === 0 ? (
