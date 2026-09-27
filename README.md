@@ -5,6 +5,7 @@
 
 <p align="center">
   <a href="https://witness-kandula.vercel.app"><img alt="Live demo" src="https://img.shields.io/badge/live-witness--kandula.vercel.app-0e6e78"></a>
+  <a href="https://github.com/kandulanikhilvarma/witness/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/kandulanikhilvarma/witness/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-1d1b17">
   <img alt="React 19" src="https://img.shields.io/badge/React-19-1d1b17">
   <img alt="ISO 15243" src="https://img.shields.io/badge/ISO-15243-8a6d25">
@@ -203,7 +204,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-  M["Stage-2 suggestion<br/>(immutable provenance)"] --> G{"Confidence<br/>gate 0.7"}
+  M["Stage-2 suggestion<br/>(pinned by a trigger)"] --> G{"Confidence<br/>gate 0.7"}
   G -->|at or above| AUTO["auto-filed"]
   G -->|below| Q["review queue"]
   Q --> H["Inspector confirms<br/>or corrects"]
@@ -219,6 +220,46 @@ warranty reports use the inspector's decision. The system keeps the model
 output beside the human decision and never changes it. A disputed
 classification is therefore auditable.
 
+The database enforces this rule, not the app. A trigger on `findings` copies
+the model's mode, severity and confidence into `model_*` columns on insert. On
+every update the trigger sets them back to their old values. A correction can
+change `iso_mode` and `severity`. It cannot erase what the model said. The
+Insights page compares the two and shows, per mode, how often inspectors kept
+the model's call. Tune the gate against that number.
+
+### The data model
+
+```mermaid
+erDiagram
+  tenants ||--o{ memberships : "has"
+  tenants ||--o{ part_families : "owns"
+  part_families ||--o{ enrolments : "has"
+  enrolments ||--o{ assets : "reference photos"
+  tenants ||--o{ assets : "uploads"
+  tenants ||--o{ findings : "records"
+  part_families ||--o{ findings : "classifies"
+  findings }o--o{ batches : "finding_batch"
+  tenants ||--o{ batches : "owns"
+  tenants ||--o{ audit_events : "logs"
+```
+
+| Table | Holds |
+|-------|-------|
+| `tenants`, `memberships` | A workspace and who belongs to it. `witness.is_member(tenant_id)` is the RLS test on every other table |
+| `part_families`, `enrolments` | A kind of part and its known-good reference set; the trained coreset is stored inline on the enrolment |
+| `assets` | One uploaded photo: thumbnail, EXIF, provenance score, perceptual hash, and the path of the original in the `witness-originals` bucket |
+| `findings` | One classification: ISO mode, severity, attribution, confidence, review state, and the pinned `model_*` suggestion |
+| `batches`, `finding_batch` | Production lots and suppliers, linked many-to-many to findings |
+
+### Where each part runs
+
+| Part | Runs on | Holds these secrets |
+|------|---------|---------------------|
+| Pages, API routes, server actions | Vercel, Node runtime | `NEXT_PUBLIC_SUPABASE_*` (public), `OPENROUTER_API_KEY`, `PATCHCORE_TOKEN` |
+| `api/patchcore.py` | Vercel, Python runtime | `PATCHCORE_TOKEN` only. No database access |
+| Postgres, Auth, Storage | Supabase | The service role key stays in Supabase. The app never uses it |
+| Vision model (optional) | OpenRouter | Receives one resized photo per classification, nothing else |
+
 ---
 
 ## Design invariants
@@ -229,8 +270,10 @@ enforces it, so the rule cannot drift.
 | Invariant | Enforcement |
 |-----------|-------------|
 | Severity never rides on hue alone | Every chip pairs a hue with a glyph (`○◔◑◕●`) and a numeral (`src/components/severity-chip.tsx`) |
-| The model never overwrites the human call | The system stores the (model, human) pair and keeps the suggestion immutable |
-| Stage 2 cannot invent a code | A forced choice against the part family's ISO catalogue; an off-list code is discarded (`src/lib/stage2.ts`) |
+| The human call never erases the model's call | A trigger pins `findings.model_*` on every update (`supabase/migrations/20260927120000_model_suggestion_and_originals.sql`) |
+| Stage 2 cannot invent a code | A forced choice against the part family's ISO catalogue. An off-list code is discarded and the finding drops to confidence 0, so it always goes to a person (`src/lib/gate.ts`, `forceChoice`) |
+| Evidence is append-only | Originals are stored by SHA-256 in a private bucket with read and insert policies only, no update or delete |
+| Text meets WCAG AA | `scripts/check-contrast.mjs` reads the tokens from `globals.css` and fails CI below 4.5:1 |
 | One tenant cannot read another's rows | Postgres row-level security scopes every row to the signed-in tenant |
 | The anomaly function holds no database credentials | It runs stateless: feature vectors in, a score out (`api/patchcore.py`) |
 | An unsure record stays unconfirmed | The confidence gate has a visible threshold; low confidence queues for review |
@@ -273,8 +316,8 @@ enforces it, so the rule cannot drift.
 | `/model-card` | The model, its data, its limits, its exclusions |
 | `/console` | Findings, severity distribution, top modes, JSON export |
 | `/console/enrol` | Part families, reference sets, train coreset, score a subject |
-| `/console/review` | The low-confidence queue: confirm or correct |
-| `/console/insights` | The 3-axis cube: mode, severity, attribution |
+| `/console/review` | The low-confidence queue, worst and least certain first: confirm or correct |
+| `/console/insights` | The 3-axis cube (mode, severity, attribution) and model-against-inspector agreement |
 | `/console/batches` | Batches and suppliers, findings per lot |
 | `/console/findings/[id]` | Inspection detail, ISO trace, batch link, warranty report |
 | `/report/[id]` | A print-ready warranty document |
@@ -284,8 +327,15 @@ enforces it, so the rule cannot drift.
 ## The JSON API
 
 Every route runs on the Node runtime, because `sharp` is a native module. Each
-route is auth-gated and row-level-security scoped, so a caller only ever reads
-or writes its own workspace.
+Supabase route is auth-gated and row-level-security scoped, so a caller only
+ever reads or writes its own workspace. The local demo routes (`/api/records`,
+`/api/batches`) answer 404 when Supabase is configured.
+
+Every image route checks the upload before it decodes it: 10 MB at most,
+40 megapixels at most, JPEG, PNG, WebP, HEIC, AVIF or TIFF. On Vercel the
+platform also caps a request body at 4.5 MB. `/api/classify` allows
+`CLASSIFY_DAILY_LIMIT` classifications per workspace per UTC day (default 100),
+because each one can call a paid model.
 
 | Route | Method | Job |
 |-------|--------|-----|
@@ -295,8 +345,32 @@ or writes its own workspace.
 | `/api/records` | `GET`, `POST` | The local demo path: list records, or post an image to run the whole loop in one call |
 | `/api/records/[id]/review` | `POST` | The inspector's determination. It overrides the model and becomes authoritative |
 | `/api/batches` | `GET`, `POST` | List batches with their worst severity, or upsert a batch's provenance: line, produced-on date, supplier notes |
-| `/api/export/findings` | `GET` | Machine-readable findings for a warranty system or a BI tool. The crop data URIs are dropped to keep the payload lean |
-| `/api/export/labels` | `GET` | The training manifest: every confirmed record as a (model suggestion, human label) pair |
+| `/api/export/findings` | `GET` | Every finding in the workspace, paged through in full, with the model's call beside the current one. `?format=csv` gives the same rows for a spreadsheet |
+| `/api/export/labels` | `GET` | The training manifest: every reviewed record as a (model suggestion, human label) pair |
+
+An example classify call and its answer:
+
+```bash
+curl -X POST https://witness-kandula.vercel.app/api/classify \
+  -H "content-type: application/json" -b "<your session cookies>" \
+  -d '{"enrolId":"<enrolment uuid>","image":"data:image/jpeg;base64,...","anomalyScore":1.8}'
+```
+
+```json
+{
+  "id": "5b0c...",
+  "routed": "queued",
+  "gate": 0.7,
+  "result": {
+    "modeCode": "5.1",
+    "modeLabel": "Fatigue (rolling contact)",
+    "severity": 3,
+    "confidence": 0.62,
+    "rationale": "Flaking on the inner raceway along the load zone.",
+    "source": "openrouter:openai/gpt-4o-mini"
+  }
+}
+```
 
 ---
 
@@ -331,7 +405,8 @@ shape, and every structured-data builder.
 | Images | `sharp`, `exifr` | Native decode, EXIF, thumbnails, perceptual hash |
 | Validation | `zod` v4 | One schema guards the local record path |
 | Local database | PGlite (`@electric-sql/pglite`) | An in-process Postgres for the keyless local demo |
-| Typography | Metamorphous, Cabin, Jost, JetBrains Mono, Fraunces | All OFL, all self-hosted by `next/font` at build time |
+| Typography | Metamorphous (display), Cabin (body, labels, italics), JetBrains Mono (data) | Three OFL families, self-hosted by `next/font` at build time |
+| Tests | Vitest, a smoke run, a contrast gate | Pure logic is unit-tested; the smoke run drives the keyless loop end to end |
 
 ---
 
@@ -346,9 +421,12 @@ npm run build && npm start
 ### Check it
 
 ```bash
-npm run lint           # eslint
-npm run typecheck      # tsc --noEmit
-npm test               # end-to-end smoke against a running server on :3000
+npm run lint                     # eslint
+npm run typecheck                # tsc --noEmit
+npm run test:unit                # vitest: gate, review guard, buckets, provenance, csv
+node scripts/check-contrast.mjs  # every text colour pair at WCAG AA
+python api/patchcore.py          # the anomaly function's self-check
+npm test                         # end-to-end smoke against a running server on :3000
 ```
 
 `npm test` posts a synthesised image, reads the record back, upserts the batch,
@@ -358,19 +436,52 @@ app runs the keyless PGlite demo. CI runs the same command against the built
 app on every push.
 
 With **no environment variables**, the app runs the local PGlite demo. The demo
-seeds records and uses the heuristic classifier. To run the full Supabase system
-on your machine, set these variables:
+seeds records and uses the heuristic classifier. To run the full Supabase system,
+set these variables:
+
+| Variable | Needed | Read by | Purpose |
+|----------|--------|---------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | for Supabase | browser and server | Project URL. Bakes in at build time |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | for Supabase | browser and server | Publishable anon key. Bakes in at build time |
+| `PATCHCORE_TOKEN` | on Vercel | `src/lib/patchcore.ts`, `api/patchcore.py` | Shared secret. The anomaly function refuses callers without it on Vercel. Use a long random string, set the same value for both |
+| `OPENROUTER_API_KEY` | optional | `src/lib/stage2.ts` | Turns on the vision model for stage 2. Server-side only, never `NEXT_PUBLIC` |
+| `OPENROUTER_MODEL` | optional | `src/lib/stage2.ts` | Any vision-capable model id. Default `openai/gpt-4o-mini` |
+| `CLASSIFY_DAILY_LIMIT` | optional | `/api/classify` | Classifications per workspace per UTC day. Default 100 |
+| `WITNESS_DATA_DIR`, `WITNESS_ONNX_MODEL` | optional | local demo | Where PGlite keeps data; an ONNX model for the demo classifier |
+
+Rebuild the app after you change a `NEXT_PUBLIC_*` value.
+
+### Set up the backend
+
+The Supabase tables live in the `witness` schema. The repository holds the
+migrations from 2026-09-27 onward in `supabase/migrations/`. The schema before
+that date (tables, RLS policies, `bootstrap_tenant`) was made in the hosted
+project and is not yet in the repository. Capture it once:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=...        # your project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...   # the publishable anon key
-# optional: turn on the real vision model for stage 2:
-OPENROUTER_API_KEY=...              # a server-side secret, never NEXT_PUBLIC
-OPENROUTER_MODEL=openai/gpt-4o-mini # any vision-capable model
+npx supabase login
+npx supabase link --project-ref <project ref>
+npx supabase db pull --schema witness
 ```
 
-The `NEXT_PUBLIC_*` values bake in at build time. Rebuild the app after you
-change them.
+Commit the file it writes. Then apply the newer migrations:
+
+```bash
+npx supabase db push
+```
+
+In the Supabase dashboard, add `witness` to the exposed schemas (API settings)
+and turn on anonymous sign-ins (Auth settings) for the demo path.
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| On Windows, `next dev --turbopack` panics spawning the PostCSS worker (`0xc0000142`) and pages return 500 | A Turbopack worker issue on Windows | `npm run dev` already uses `--webpack`. `npm run build` and `npm start` are not affected |
+| Sign-in fails, or the console shows "This view could not load" | The free-tier Supabase project is paused after a week without traffic | Restore it in the Supabase dashboard |
+| Scoring returns `unauthorized` | `PATCHCORE_TOKEN` is not set, or differs between the two runtimes | Set the same value for the whole Vercel project and redeploy |
+| An upload returns 413 | The photo is over Vercel's 4.5 MB request cap | Export a smaller copy. Scoring resizes in the browser and is not affected |
+| Insights shows "Needs the model-suggestion columns" | The 2026-09-27 migration has not run | `npx supabase db push` |
 
 ### Build the diagrams
 
@@ -399,6 +510,11 @@ Witness is live on Vercel. It auto-deploys from `master`:
   PostgREST can reach it.
 - `OPENROUTER_API_KEY` is a server-side variable that you set in Vercel. It is
   never committed. Without it, stage 2 runs keyless.
+- Set `PATCHCORE_TOKEN` before you deploy this version. Without it, the anomaly
+  function answers `unauthorized` on Vercel, by design.
+- Every response carries a baseline security header set (`next.config.ts`): no
+  framing, no MIME sniffing, a strict referrer policy, and camera access only
+  for this origin.
 
 ---
 
@@ -414,7 +530,13 @@ Witness is live on Vercel. It auto-deploys from `master`:
 - [x] Inspection view, dashboards, batch and supplier linking
 - [x] Exports: warranty report, JSON API
 - [x] Public about, taxonomy, transparency, and model-card pages
+- [x] Model suggestion pinned by the database; model-against-inspector agreement
+- [x] Originals kept by SHA-256; upload limits; per-workspace classify quota
 - [ ] A **trained, diagnostic** stage-1 backbone. This is blocked on labelled
   data, which the review loop collects.
+- [ ] Per-mode gate thresholds set from the agreement table
+- [ ] Case records (one returned part, many photos, RMA metadata, disposition)
+- [ ] Direct browser-to-storage upload, so full-size originals skip the 4.5 MB cap
+- [ ] Roles and invites; a seeded demo workspace for first visits
 
 The design system and the structure are in `docs/witness-slice-report.md`.

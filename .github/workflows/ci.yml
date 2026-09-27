@@ -16,6 +16,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: npm run test:unit
+      - run: node scripts/check-contrast.mjs # design tokens must keep text at WCAG AA
       - run: npm run build # next build typechecks; generates .next/types (LayoutProps etc.)
       - run: node scripts/check-mermaid.mjs
       # End to end against the built app. With no environment variables set, the
@@ -34,8 +36,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements-dev.txt
-      - run: ruff check scripts
+      - run: ruff check scripts api
       - run: python scripts/check-licences.py
+      - run: pip install -r requirements.txt
+      - run: python api/patchcore.py # the anomaly function's own self-check
 
   # Keep the README figures in sync with the drawing geometry. On every push to
   # master this regenerates docs/assets from src/lib/mech.ts and commits the
