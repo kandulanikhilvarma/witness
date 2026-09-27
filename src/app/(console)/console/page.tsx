@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LocalTime } from "@/components/local-time";
 import { redirect } from "next/navigation";
 import { listRecords, stats } from "@/lib/db";
 import { RecordsTable } from "@/components/records-table";
@@ -9,10 +10,13 @@ import { SEVERITY, modeLabel } from "@/lib/iso";
 import { supabaseConfigured } from "@/lib/supabase/config";
 import { supabaseServer } from "@/lib/supabase/server";
 import { currentSession } from "@/lib/tenant";
+import { reviewStateLabel } from "@/lib/gate";
 
 export const dynamic = "force-dynamic";
 
-const SEV_TEXT = ["text-sev-0", "text-sev-1", "text-sev-2", "text-sev-3", "text-sev-4"];
+const SEV_TEXT = ["text-sev-0-ink", "text-sev-1-ink", "text-sev-2-ink", "text-sev-3-ink", "text-sev-4-ink"];
+const PAGE = 100;
+const MODE_SCAN = 5000;
 const SEV_BG_SOLID = ["bg-sev-0", "bg-sev-1", "bg-sev-2", "bg-sev-3", "bg-sev-4"];
 
 export default async function ConsolePage({
@@ -37,7 +41,7 @@ export default async function ConsolePage({
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl">Records</h1>
@@ -151,9 +155,9 @@ export default async function ConsolePage({
   );
 }
 
-// Supabase-backed console. Auth-gated, tenant-scoped by RLS. Phase 1 target:
-// sign in, land on your (empty) workspace. Ingest and the rest migrate off
-// PGlite in later phases and are marked Fixture until they do.
+// Supabase-backed console. Auth-gated, tenant-scoped by RLS. Headline numbers
+// are COUNT queries so they stay true past any page size; the table shows the
+// latest page only.
 type FindingRow = {
   id: string;
   iso_standard: string;
@@ -170,20 +174,30 @@ async function SupabaseConsole() {
   if (!session) redirect("/login");
 
   const sb = await supabaseServer();
-  const { data, error } = await sb
-    .from("findings")
-    .select("id, iso_standard, iso_mode, iso_submode, severity, attribution, review_state, created_at")
-    .order("created_at", { ascending: false })
-    .limit(100);
-  const findings = (data ?? []) as FindingRow[];
+  const count = () => sb.from("findings").select("id", { count: "exact", head: true });
+  const [list, all, rev, risk, modesRes, ...sev] = await Promise.all([
+    sb
+      .from("findings")
+      .select("id, iso_standard, iso_mode, iso_submode, severity, attribution, review_state, created_at")
+      .order("created_at", { ascending: false })
+      .limit(PAGE),
+    count(),
+    count().in("review_state", ["confirmed", "corrected"]),
+    count().gte("severity", 3),
+    // ponytail: mode tally from two narrow columns, capped. Move to a SQL
+    // GROUP BY view when a workspace passes the cap.
+    sb.from("findings").select("iso_standard, iso_mode").limit(MODE_SCAN),
+    ...[0, 1, 2, 3, 4].map((lv) => count().eq("severity", lv)),
+  ]);
+  const error = list.error;
+  const findings = (list.data ?? []) as FindingRow[];
 
-  const total = findings.length;
-  const reviewed = findings.filter((f) => f.review_state === "confirmed" || f.review_state === "corrected").length;
-  const atRisk = findings.filter((f) => f.severity >= 3).length;
-
-  const sevCounts = [0, 1, 2, 3, 4].map((lv) => findings.filter((f) => f.severity === lv).length);
+  const total = all.count ?? 0;
+  const reviewed = rev.count ?? 0;
+  const atRisk = risk.count ?? 0;
+  const sevCounts = sev.map((r) => r.count ?? 0);
   const modeCounts = new Map<string, { std: string; n: number }>();
-  for (const f of findings) {
+  for (const f of (modesRes.data ?? []) as { iso_standard: string; iso_mode: string }[]) {
     const cur = modeCounts.get(f.iso_mode) ?? { std: f.iso_standard, n: 0 };
     cur.n += 1;
     modeCounts.set(f.iso_mode, cur);
@@ -191,7 +205,7 @@ async function SupabaseConsole() {
   const topModes = [...modeCounts.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 4);
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl">{session.tenantName}</h1>
@@ -207,6 +221,12 @@ async function SupabaseConsole() {
           >
             Export JSON
           </a>
+          <a
+            href="/api/export/findings?format=csv"
+            className="rounded-sm border border-c-line bg-c-surface-2 px-3 py-2 text-2xs text-c-text hover:border-c-focus"
+          >
+            Export CSV
+          </a>
           <SignOut />
         </div>
       </header>
@@ -218,6 +238,7 @@ async function SupabaseConsole() {
           ["findings", total],
           ["confirmed", `${reviewed}/${total}`],
           ["pipeline", "live"],
+          ["queue", total - reviewed],
         ]}
       />
 
@@ -284,13 +305,9 @@ async function SupabaseConsole() {
         </div>
       )}
 
-      <div className="mt-6 flex items-center gap-2 rounded-sm border border-dashed border-c-line bg-c-surface px-4 py-3 text-2xs text-c-text-3">
-        <span className="rounded-sm border border-c-line px-1.5 py-0.5 font-mono uppercase tracking-wide">Live</span>
-        Intake, anomaly scoring, and ISO classification all run on Supabase.
-      </div>
 
       {error && (
-        <p className="mt-6 rounded-sm border border-sev-3/40 bg-sev-3-bg p-4 text-sm text-sev-3">
+        <p className="mt-6 rounded-sm border border-sev-3/40 bg-sev-3-bg p-4 text-sm text-sev-3-ink">
           Could not load findings: {error.message}. If this says the schema is
           not exposed, add <span className="tabular">witness</span> to the
           project&apos;s exposed schemas.
@@ -300,7 +317,11 @@ async function SupabaseConsole() {
       <div className="mt-6">
         {total === 0 ? (
           <p className="rounded-sm border border-dashed border-c-line bg-c-surface p-8 text-center text-sm text-c-text-3">
-            No findings yet. This workspace is empty. Ingest arrives in phase 2.
+            No findings yet. Start in{" "}
+            <Link href="/console/enrol" className="text-c-text underline decoration-c-line underline-offset-2 hover:decoration-c-focus">
+              Enrol
+            </Link>
+            : add reference photos of good parts, train, then score and classify a returned part.
           </p>
         ) : (
           <div className="overflow-x-auto rounded-sm border border-c-line">
@@ -316,32 +337,54 @@ async function SupabaseConsole() {
               </thead>
               <tbody>
                 {findings.map((f) => (
-                  <tr key={f.id} className="border-t border-c-line">
+                  <tr key={f.id} className="border-t border-c-line transition-colors hover:bg-c-surface-2">
                     <td className="px-3 py-2 tabular text-c-text-2">{f.iso_standard}</td>
                     <td className="px-3 py-2">
                       <Link
                         href={`/console/findings/${f.id}`}
                         className="text-c-text underline decoration-c-line underline-offset-2 hover:decoration-c-focus"
                       >
-                        {f.iso_mode}
+                        <span className="tabular text-c-text-3">{f.iso_mode}</span> {modeLabel(f.iso_standard, f.iso_mode)}
                         {f.iso_submode ? ` · ${f.iso_submode}` : ""}
                       </Link>
                     </td>
                     <td className="px-3 py-2">
                       <SeverityChip level={f.severity} />
                     </td>
-                    <td className="px-3 py-2 text-c-text-2">{f.review_state}</td>
+                    <td className="px-3 py-2">
+                      <ReviewState state={f.review_state} />
+                    </td>
                     <td className="px-3 py-2 tabular text-2xs text-c-text-3">
-                      {new Date(f.created_at).toLocaleString()}
+                      <LocalTime iso={new Date(f.created_at).toISOString()} />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {total > findings.length && (
+              <p className="border-t border-c-line bg-c-surface px-3 py-2 text-2xs text-c-text-3">
+                Showing the latest {findings.length} of {total}. Export JSON or CSV for the full set.
+              </p>
+            )}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+// Review state as a chip. A human decision (confirmed, corrected) reads solid;
+// a machine state (auto, queued) reads outlined, so the two never blur.
+function ReviewState({ state }: { state: string }) {
+  const human = state === "confirmed" || state === "corrected";
+  return (
+    <span
+      className={`inline-flex rounded-sm border px-1.5 py-0.5 text-2xs ${
+        human ? "border-c-text-3 bg-c-surface-2 text-c-text" : "border-c-line text-c-text-2"
+      } ${state === "queued" ? "border-dashed" : ""}`}
+    >
+      {reviewStateLabel(state)}
+    </span>
   );
 }
 
@@ -364,12 +407,12 @@ function Stat({
       <div className="flex items-center justify-between">
         <span className="text-2xs uppercase tracking-wide text-c-text-3">{label}</span>
         {glyph && (
-          <span aria-hidden className={`text-xs leading-none ${alert ? "text-sev-3" : "text-c-text-3"}`}>
+          <span aria-hidden className={`text-xs leading-none ${alert ? "text-sev-3-ink" : "text-c-text-3"}`}>
             {glyph}
           </span>
         )}
       </div>
-      <div className={`mt-1 font-display text-2xl tabular ${alert ? "text-sev-3" : "text-c-text"}`}>{value}</div>
+      <div className={`mt-1 font-display text-2xl tabular ${alert ? "text-sev-3-ink" : "text-c-text"}`}>{value}</div>
       {pct !== null && (
         <>
           <div className="mt-2 h-1 overflow-hidden rounded-sm bg-c-surface-2">

@@ -15,8 +15,10 @@ EfficientAD is deliberately not used (MVTec patent).
 from __future__ import annotations
 
 import base64
+import hmac
 import io
 import json
+import os
 from http.server import BaseHTTPRequestHandler
 
 import numpy as np
@@ -31,6 +33,21 @@ FEAT_DIMS = 5
 # lighting spread push unseen-but-good parts above 1.0, so the floor is >1; a real
 # fleet tunes this against its own false-positive tolerance.
 THRESH_MARGIN = 2.0
+
+# Abuse limits. This endpoint is public on the deployment, so it only answers
+# callers that present PATCHCORE_TOKEN (the Next server does), and it bounds the
+# work a single request can ask for.
+MAX_BODY = 4_500_000  # Vercel's own request cap, stated so local runs match
+MAX_IMAGES = 200
+Image.MAX_IMAGE_PIXELS = 40_000_000  # PIL raises on anything larger (decompression bomb)
+TOKEN = os.environ.get("PATCHCORE_TOKEN", "")
+
+
+def _authorized(presented: str | None) -> bool:
+    """Token required on Vercel. Local runs without a token stay open for dev."""
+    if not TOKEN:
+        return not os.environ.get("VERCEL")
+    return hmac.compare_digest(presented or "", TOKEN)
 
 
 def _decode(b64: str) -> np.ndarray:
@@ -121,8 +138,8 @@ def train(images_b64: list[str]) -> dict:
         "threshold": threshold,
         "metrics": {
             "n_images": len(images_b64),
-            "n_patches_seen": int(len(feats)),
-            "n_bank": int(len(bank)),
+            "n_patches_seen": len(feats),
+            "n_bank": len(bank),
             "ref_score_mean": float(per_img.mean()) if len(per_img) else 0.0,
             "ref_score_max": float(per_img.max()) if len(per_img) else 0.0,
         },
@@ -153,6 +170,8 @@ def _dispatch(payload: dict) -> dict:
         imgs = payload.get("images") or []
         if not imgs:
             return {"error": "no reference images"}
+        if len(imgs) > MAX_IMAGES:
+            return {"error": f"at most {MAX_IMAGES} reference images per training run"}
         return train(imgs)
     if op == "score":
         cs = payload.get("coreset")
@@ -163,15 +182,20 @@ def _dispatch(payload: dict) -> dict:
     return {"error": f"unknown op {op!r}"}
 
 
-class handler(BaseHTTPRequestHandler):  # noqa: N801 — Vercel Python entrypoint name
-    def do_POST(self):  # noqa: N802
+class handler(BaseHTTPRequestHandler):  # Vercel requires this exact entrypoint name
+    def do_POST(self):
         length = int(self.headers.get("content-length", 0))
-        try:
-            payload = json.loads(self.rfile.read(length) or b"{}")
-            body = _dispatch(payload)
-            status = 400 if "error" in body else 200
-        except Exception as exc:  # malformed request — report, do not crash the worker
-            body, status = {"error": str(exc)}, 400
+        if not _authorized(self.headers.get("x-witness-token")):
+            body, status = {"error": "unauthorized"}, 401
+        elif length > MAX_BODY:
+            body, status = {"error": "request too large"}, 413
+        else:
+            try:
+                payload = json.loads(self.rfile.read(length) or b"{}")
+                body = _dispatch(payload)
+                status = 400 if "error" in body else 200
+            except Exception as exc:  # noqa: BLE001 — request boundary: report, never crash the worker
+                body, status = {"error": str(exc)}, 400
         data = json.dumps(body).encode()
         self.send_response(status)
         self.send_header("content-type", "application/json")

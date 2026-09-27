@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseConfigured } from "@/lib/supabase/config";
 import { currentSession } from "@/lib/tenant";
 import { scoreImage } from "@/lib/patchcore";
+import { checkImage, decodeImagePayload } from "@/lib/upload";
 
 export const runtime = "nodejs";
 
@@ -19,6 +20,10 @@ export async function POST(request: Request) {
   if (!enrolId || !image) {
     return NextResponse.json({ error: "enrolId and image required." }, { status: 400 });
   }
+  const buffer = typeof image === "string" ? decodeImagePayload(image) : null;
+  if (!buffer) return NextResponse.json({ error: "The image is larger than 10 MB." }, { status: 413 });
+  const bad = await checkImage(buffer);
+  if (bad) return NextResponse.json({ error: bad }, { status: 422 });
   const result = await scoreImage(enrolId, image);
   if ("error" in result) return NextResponse.json(result, { status: 422 });
   return NextResponse.json(result, { status: 200 });

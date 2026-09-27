@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { listBatches, upsertBatch } from "@/lib/db";
+import { supabaseConfigured } from "@/lib/supabase/config";
 
 export const runtime = "nodejs";
 
@@ -13,10 +14,16 @@ const BatchInput = z.object({
 });
 
 export async function GET() {
+  // The PGlite demo routes carry no auth. On a Supabase deploy they must not
+  // exist at all, or anyone could write to the in-process demo database.
+  if (supabaseConfigured) return NextResponse.json({ error: "Not found." }, { status: 404 });
   return NextResponse.json({ batches: await listBatches() });
 }
 
 export async function POST(request: Request) {
+  // The PGlite demo routes carry no auth. On a Supabase deploy they must not
+  // exist at all, or anyone could write to the in-process demo database.
+  if (supabaseConfigured) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const parsed = BatchInput.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid batch." }, { status: 400 });

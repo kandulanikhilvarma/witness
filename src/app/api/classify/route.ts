@@ -5,6 +5,11 @@ import { currentSession } from "@/lib/tenant";
 import { classifyCrop, CONFIDENCE_GATE, vlmConfigured } from "@/lib/stage2";
 import { makeThumb } from "@/lib/pipeline";
 import { STANDARD, type PartFamily } from "@/lib/iso";
+import { checkImage, decodeImagePayload } from "@/lib/upload";
+
+// Each classify can call a paid vision model, and anyone can open a demo
+// workspace, so a workspace gets a fixed number of classifications per UTC day.
+const DAILY_LIMIT = Number(process.env.CLASSIFY_DAILY_LIMIT) || 100;
 
 export const runtime = "nodejs";
 
@@ -29,6 +34,18 @@ export async function POST(request: Request) {
   }
 
   const sb = await supabaseServer();
+  const today = new Date().toISOString().slice(0, 10);
+  const { count: usedToday } = await sb
+    .from("findings")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", `${today}T00:00:00Z`);
+  if ((usedToday ?? 0) >= DAILY_LIMIT) {
+    return NextResponse.json(
+      { error: `Daily limit of ${DAILY_LIMIT} classifications reached for this workspace.` },
+      { status: 429 },
+    );
+  }
+
   const { data: enrol } = await sb
     .from("enrolments")
     .select("part_family_id, part_families(kind)")
@@ -41,8 +58,10 @@ export async function POST(request: Request) {
   }
   const family = kind as PartFamily;
 
-  const base64 = image.includes(",") ? image.split(",", 2)[1] : image;
-  const buffer = Buffer.from(base64, "base64");
+  const buffer = decodeImagePayload(image);
+  if (!buffer) return NextResponse.json({ error: "The image is larger than 10 MB." }, { status: 413 });
+  const bad = await checkImage(buffer);
+  if (bad) return NextResponse.json({ error: bad }, { status: 422 });
 
   let result;
   let crop: string;
