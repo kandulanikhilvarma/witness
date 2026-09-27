@@ -56,10 +56,10 @@ const COVERAGE = [
 ];
 
 const BADGE: Record<string, string> = {
-  live: "border-sev-0/40 bg-sev-0-bg text-sev-0",
+  live: "border-sev-0/40 bg-sev-0-bg text-sev-0-ink",
   optional: "border-brass/40 text-brass",
   planned: "border-iron/40 text-paper-2",
-  excluded: "border-sev-3/40 bg-sev-3-bg text-sev-3",
+  excluded: "border-sev-3/40 bg-sev-3-bg text-sev-3-ink",
 };
 
 export default function TransparencyPage() {
