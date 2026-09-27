@@ -50,10 +50,11 @@ const SEV_RGB: Record<number, [number, number, number]> = {
 
 // A synthetic 240px "part photo": a lit gradient plus seeded grain and a wear
 // band. Pure raster (no SVG/font), so it renders identically on any platform.
-async function thumb(seed: Seed, key: number): Promise<string> {
+// Also used to seed a fresh Supabase demo workspace (src/lib/demo-seed.ts).
+export async function synthThumb(severity: number, key: number): Promise<string> {
   const W = 240;
   const H = 240;
-  const [br, bg, bb] = SEV_RGB[seed.severity];
+  const [br, bg, bb] = SEV_RGB[severity] ?? SEV_RGB[2];
   const buf = Buffer.alloc(W * H * 3);
   let r = (key * 2654435761) >>> 0; // deterministic LCG per record
   const rand = () => ((r = (r * 1664525 + 1013904223) >>> 0) / 0xffffffff);
@@ -114,7 +115,7 @@ export async function seedIfEmpty(db: PGlite): Promise<void> {
         `${s.batch.toLowerCase()}-${String(key).padStart(2, "0")}.jpg`,
         1280,
         960,
-        await thumb(s, key),
+        await synthThumb(s.severity, key),
         JSON.stringify({ Make: "Nikon", Model: "D7500", FNumber: 8, ISO: 200 }),
         s.batch,
         rev ? rev.code : null,

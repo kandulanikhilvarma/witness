@@ -1,4 +1,5 @@
 import { supabaseServer } from "./supabase/server";
+import { seedDemoWorkspace } from "./demo-seed";
 
 export interface Session {
   userId: string;
@@ -40,6 +41,14 @@ export async function currentSession(): Promise<Session | null> {
     .rpc("bootstrap_tenant", { p_name: name })
     .single<{ id: string; name: string }>();
   if (te || !tenant) return null;
+
+  // An anonymous demo visitor gets a populated workspace, not an empty one.
+  // Best effort: a seed failure must never block sign-in.
+  if (user.is_anonymous) {
+    await seedDemoWorkspace(sb, tenant.id).catch((e) =>
+      console.error("[tenant] demo seed failed:", e instanceof Error ? e.message : e),
+    );
+  }
 
   return { userId: user.id, tenantId: tenant.id, tenantName: tenant.name };
 }

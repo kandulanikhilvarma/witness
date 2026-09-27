@@ -210,7 +210,7 @@ export default async function EnrolPage({
                 </p>
               )}
 
-              <IntakeForm enrolmentId={detail.enrolment.id} />
+              <IntakeForm enrolmentId={detail.enrolment.id} tenantId={session.tenantId} />
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <form action={trainCoreset}>

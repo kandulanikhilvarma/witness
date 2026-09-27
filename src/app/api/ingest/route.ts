@@ -24,15 +24,53 @@ export async function POST(request: Request) {
   }
   const session = await currentSession();
   if (!session) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  const sb = await supabaseServer();
 
-  const form = await request.formData();
-  const file = form.get("file");
-  const channel = (form.get("channel") as string) || "portal";
-  const enrolmentId = (form.get("enrolment_id") as string) || null;
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "No image uploaded." }, { status: 400 });
+  // Two ways in. The browser normally uploads the original straight to the
+  // bucket (no 4.5 MB function body cap) and posts only its path as JSON; the
+  // server then reads the bytes back under the tenant's RLS session. A plain
+  // multipart upload is the fallback for when storage is unavailable.
+  let buffer: Buffer;
+  let filename: string;
+  let mime: string;
+  let channel: string;
+  let enrolmentId: string | null;
+  let storedPath: string | null = null;
+
+  if ((request.headers.get("content-type") ?? "").includes("application/json")) {
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+    const path = typeof body?.path === "string" ? body.path : "";
+    // Only this tenant's folder, only a content-addressed name.
+    const parts = path.split("/");
+    const m =
+      parts.length === 2 && parts[0] === session.tenantId
+        ? parts[1].match(/^([0-9a-f]{64})\.[a-z0-9]{3,4}$/)
+        : null;
+    if (!m) return NextResponse.json({ error: "Invalid storage path." }, { status: 400 });
+    const { data: blob, error: dlErr } = await sb.storage.from(ORIGINALS).download(path);
+    if (dlErr || !blob) return NextResponse.json({ error: "Uploaded original not found." }, { status: 404 });
+    buffer = Buffer.from(await blob.arrayBuffer());
+    if (createHash("sha256").update(buffer).digest("hex") !== m[1]) {
+      return NextResponse.json({ error: "Original does not match its hash." }, { status: 422 });
+    }
+    filename = typeof body?.filename === "string" ? body.filename.slice(0, 200) : "upload";
+    mime = blob.type || "image/jpeg";
+    channel = typeof body?.channel === "string" ? body.channel : "portal";
+    enrolmentId = typeof body?.enrolment_id === "string" && body.enrolment_id ? body.enrolment_id : null;
+    storedPath = path;
+  } else {
+    const form = await request.formData();
+    const file = form.get("file");
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "No image uploaded." }, { status: 400 });
+    }
+    buffer = Buffer.from(await file.arrayBuffer());
+    filename = file.name || "upload";
+    mime = file.type || "image/jpeg";
+    channel = (form.get("channel") as string) || "portal";
+    enrolmentId = (form.get("enrolment_id") as string) || null;
   }
-  const buffer = Buffer.from(await file.arrayBuffer());
+
   const bad = await checkImage(buffer);
   if (bad) return NextResponse.json({ error: bad }, { status: 422 });
 
@@ -63,18 +101,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not read that image." }, { status: 422 });
   }
 
-  const sb = await supabaseServer();
-
   // Keep the original. Content-addressed, so a re-upload of the same bytes is a
   // no-op. If storage is unavailable (bucket not yet migrated) intake still
   // succeeds and the asset records "inline", as before.
   const sha256 = createHash("sha256").update(buffer).digest("hex");
-  const objectPath = `${session.tenantId}/${sha256}.${format === "jpeg" ? "jpg" : format}`;
-  const { error: upErr } = await sb.storage
-    .from(ORIGINALS)
-    .upload(objectPath, buffer, { contentType: file.type || `image/${format}`, upsert: false });
-  const stored = !upErr || /exists/i.test(upErr.message);
-  if (!stored) console.error("[ingest] original not stored:", upErr?.message);
+  let objectPath = storedPath ?? `${session.tenantId}/${sha256}.${format === "jpeg" ? "jpg" : format}`;
+  let stored = storedPath !== null;
+  if (!stored) {
+    const { error: upErr } = await sb.storage
+      .from(ORIGINALS)
+      .upload(objectPath, buffer, { contentType: mime, upsert: false });
+    stored = !upErr || /exists/i.test(upErr.message);
+    if (!stored) {
+      console.error("[ingest] original not stored:", upErr?.message);
+      objectPath = "";
+    }
+  }
 
   // Near-duplicate: compare against this tenant's existing hashes (RLS-scoped).
   const { data: prior } = await sb
@@ -88,15 +130,15 @@ export async function POST(request: Request) {
   }
   const duplicate = Boolean(nearest && nearest.distance <= DUPE_THRESHOLD);
 
-  const prov = scoreProvenance({ exif, duplicate, filename: file.name || "" });
+  const prov = scoreProvenance({ exif, duplicate, filename });
 
   const { data: asset, error } = await sb
     .from("assets")
     .insert({
       tenant_id: session.tenantId,
       storage_uri: stored ? `${ORIGINALS}/${objectPath}` : "inline",
-      image_name: file.name || "upload",
-      mime: file.type || "image/jpeg",
+      image_name: filename,
+      mime,
       width,
       height,
       thumb,
