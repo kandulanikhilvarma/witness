@@ -10,18 +10,25 @@ export function IngestForm() {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Read the form now: React clears currentTarget once the handler yields.
+    const form = e.currentTarget;
     setError(null);
     setBusy(true);
     try {
       const res = await fetch("/api/records", {
         method: "POST",
-        body: new FormData(e.currentTarget),
+        body: new FormData(form),
       });
+      // ponytail: Vercel rejects request bodies over 4.5 MB before our route
+      // runs, so a full-size phone original cannot pass through a function.
+      // Upgrade path: a signed upload URL straight to the witness-originals
+      // bucket, then POST only the object path here.
+      if (res.status === 413) throw new Error("That photo is over the 4.5 MB upload limit. Export it at a smaller size and try again.");
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(body?.error ?? `Upload failed (${res.status}).`);
       }
-      e.currentTarget.reset();
+      form.reset();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
@@ -70,13 +77,13 @@ export function IngestForm() {
       <button
         type="submit"
         disabled={busy}
-        className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-paper disabled:opacity-50"
+        className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-oxide-deep disabled:opacity-50"
       >
         {busy ? "Analysing…" : "Analyse part"}
       </button>
 
       {error && (
-        <p className="w-full text-2xs text-sev-3" role="alert">
+        <p className="w-full text-2xs text-sev-3-ink" role="alert">
           {error}
         </p>
       )}

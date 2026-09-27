@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { SubmitButton } from "@/components/submit-button";
+import { LocalTime } from "@/components/local-time";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -54,7 +56,7 @@ export default async function EnrolPage({
 }) {
   if (!supabaseConfigured) {
     return (
-      <div className="mx-auto max-w-4xl px-8 py-8 text-c-text">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8 text-c-text">
         <h1 className="font-display text-2xl">Enrolment</h1>
         <p className="mt-2 text-sm text-c-text-2">
           Enrolment runs on the Supabase workspace. This deployment is on the
@@ -75,7 +77,7 @@ export default async function EnrolPage({
   const detail = enrolId ? await enrolmentDetail(enrolId) : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-6">
         <h1 className="font-display text-2xl">Enrolment</h1>
         <p className="mt-1 text-sm text-c-text-2">
@@ -132,9 +134,9 @@ export default async function EnrolPage({
                   className="flex-1 rounded-sm border border-c-line bg-c-surface-2 px-2 py-1.5 text-2xs text-c-text placeholder:text-c-text-3"
                 />
               </div>
-              <button className="w-full rounded-sm bg-c-focus px-3 py-1.5 text-2xs font-medium text-paper">
+              <SubmitButton size="sm" pending="Adding…">
                 Add family
-              </button>
+              </SubmitButton>
             </form>
           </section>
 
@@ -178,7 +180,7 @@ export default async function EnrolPage({
         </aside>
 
         {/* Right: the selected reference set. */}
-        <main>
+        <section>
           {!detail ? (
             <p className="rounded-sm border border-dashed border-c-line bg-c-surface p-8 text-center text-sm text-c-text-3">
               {family
@@ -201,7 +203,7 @@ export default async function EnrolPage({
               </div>
 
               {detail.enrolment.image_count < MIN_REFERENCE_IMAGES && (
-                <p className="mb-4 rounded-sm border border-sev-1/40 bg-sev-1-bg px-3 py-2 text-2xs text-sev-1">
+                <p className="mb-4 rounded-sm border border-sev-1/40 bg-sev-1-bg px-3 py-2 text-2xs text-sev-1-ink">
                   {MIN_REFERENCE_IMAGES}+ images make a stable normal-set. This set
                   has {detail.enrolment.image_count}. You can train now, but treat
                   results as indicative until the set fills out.
@@ -213,23 +215,29 @@ export default async function EnrolPage({
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <form action={trainCoreset}>
                   <input type="hidden" name="enrol_id" value={detail.enrolment.id} />
-                  <button
-                    disabled={detail.enrolment.image_count < 1}
-                    className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-paper disabled:opacity-50"
-                  >
-                    {detail.enrolment.status === "ready" ? "Retrain coreset" : "Train coreset"}
-                  </button>
+                  {detail.enrolment.image_count < 1 ? (
+                    <button
+                      disabled
+                      className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-on-accent opacity-50"
+                    >
+                      Train coreset
+                    </button>
+                  ) : (
+                    <SubmitButton pending="Training…">
+                      {detail.enrolment.status === "ready" ? "Retrain coreset" : "Train coreset"}
+                    </SubmitButton>
+                  )}
                 </form>
                 {detail.enrolment.status === "ready" && detail.enrolment.trained_at && (
                   <span className="text-2xs text-c-text-3">
-                    Trained {new Date(detail.enrolment.trained_at).toLocaleString()}
+                    Trained <LocalTime iso={new Date(detail.enrolment.trained_at).toISOString()} />
                     {detail.enrolment.metrics?.n_bank
                       ? ` · bank ${detail.enrolment.metrics.n_bank} patches, threshold ${(detail.enrolment.metrics.ref_score_max ?? 0).toFixed(2)}`
                       : ""}
                   </span>
                 )}
                 {detail.enrolment.status === "failed" && (
-                  <span className="text-2xs text-sev-3">Training failed. Try again.</span>
+                  <span className="text-2xs text-sev-3-ink">Training failed. Try again.</span>
                 )}
               </div>
 
@@ -262,7 +270,7 @@ export default async function EnrolPage({
               </div>
             </div>
           )}
-        </main>
+        </section>
       </div>
     </div>
   );
@@ -271,11 +279,11 @@ export default async function EnrolPage({
 function StatusPill({ status, count }: { status: string; count: number }) {
   const tone =
     status === "ready"
-      ? "border-sev-0/40 bg-sev-0-bg text-sev-0"
+      ? "border-sev-0/40 bg-sev-0-bg text-sev-0-ink"
       : status === "training"
-        ? "border-sev-1/40 bg-sev-1-bg text-sev-1"
+        ? "border-sev-1/40 bg-sev-1-bg text-sev-1-ink"
         : status === "failed"
-          ? "border-sev-3/40 bg-sev-3-bg text-sev-3"
+          ? "border-sev-3/40 bg-sev-3-bg text-sev-3-ink"
           : "border-c-line text-c-text-3";
   return (
     <span className={`rounded-sm border px-1.5 py-0.5 font-mono text-2xs uppercase tracking-wide ${tone}`}>

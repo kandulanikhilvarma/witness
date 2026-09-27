@@ -29,7 +29,7 @@ type Asset = {
 export default async function IntakePage() {
   if (!supabaseConfigured) {
     return (
-      <div className="mx-auto max-w-4xl px-8 py-8 text-c-text">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8 text-c-text">
         <h1 className="font-display text-2xl">Intake</h1>
         <p className="mt-2 text-sm text-c-text-2">
           Supabase intake is inactive on this deployment. The demo console runs
@@ -52,7 +52,7 @@ export default async function IntakePage() {
   const assets = (data ?? []) as Asset[];
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-6">
         <h1 className="font-display text-2xl">Intake</h1>
         <p className="mt-1 text-sm text-c-text-2">
@@ -80,7 +80,7 @@ export default async function IntakePage() {
 function AssetCard({ a }: { a: Asset }) {
   const band = provenanceBand(a.provenance_score);
   const bandColor =
-    band === "high" ? "text-sev-0" : band === "medium" ? "text-sev-1" : "text-sev-3";
+    band === "high" ? "text-sev-0-ink" : band === "medium" ? "text-sev-1-ink" : "text-sev-3-ink";
   const exifRows = a.exif
     ? Object.entries(a.exif)
         .filter(([, v]) => v != null && typeof v !== "object")
@@ -116,7 +116,7 @@ function AssetCard({ a }: { a: Asset }) {
         </div>
 
         {a.near_dupe_of && (
-          <p className="mt-2 rounded-sm border border-sev-2/40 bg-sev-2-bg px-3 py-2 text-2xs text-sev-2">
+          <p className="mt-2 rounded-sm border border-sev-2/40 bg-sev-2-bg px-3 py-2 text-2xs text-sev-2-ink">
             Near-duplicate: {a.dupe_distance} bits from an earlier photo in this
             workspace. Counted once; not fresh evidence.
           </p>

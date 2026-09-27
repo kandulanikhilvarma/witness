@@ -83,7 +83,7 @@ export default function AboutPage() {
             {AUDIENCE.map((a, i) => (
               <li
                 key={a.who}
-                className="reveal lift rounded-md border border-iron/20 bg-ground-2 p-5"
+                className="reveal rounded-md border border-iron/20 bg-ground-2 p-5"
                 style={stagger(i)}
               >
                 <h3 className="font-display text-base">{a.who}</h3>
@@ -250,7 +250,7 @@ export default function AboutPage() {
             <p>Each of these is running, not a screenshot in a deck.</p>
             <ul className="mt-2 grid gap-3 sm:grid-cols-2">
               {PROJECTS.map(([name, blurb]) => (
-                <li key={name} className="lift rounded-md border border-iron/20 bg-ground p-5">
+                <li key={name} className="rounded-md border border-iron/20 bg-ground p-5">
                   <h3 className="font-display text-base">{name}</h3>
                   <p className="mt-1.5 text-sm leading-6 text-paper-2">{blurb}</p>
                 </li>
@@ -417,7 +417,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 
 function Stage({ n, q, body, why }: { n: string; q: string; body: string; why: string }) {
   return (
-    <div className="lift rounded-md border border-iron/20 bg-ground-2 p-6">
+    <div className="rounded-md border border-iron/20 bg-ground-2 p-6">
       <span className="font-mono text-2xs uppercase tracking-[0.2em] text-oxide">{n}</span>
       <h3 className="mt-2.5 font-display text-lg">{q}</h3>
       <p className="mt-3 text-sm leading-6 text-paper-2">{body}</p>

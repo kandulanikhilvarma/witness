@@ -17,7 +17,7 @@ export default function Login() {
 
   if (!supabaseConfigured) {
     return (
-      <div className="mx-auto max-w-md px-8 py-24 text-paper">
+      <div className="mx-auto max-w-md py-8 text-paper">
         <h1 className="font-display text-2xl">Sign-in unavailable</h1>
         <p className="mt-3 text-sm text-paper-2">
           Supabase is not configured for this deployment, so the console runs on
@@ -58,7 +58,7 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full max-w-md flex-col justify-center px-8 py-24 text-paper">
+    <div className="mx-auto flex max-w-md flex-col py-8 text-paper">
       <p className="font-mono text-2xs uppercase tracking-[0.3em] text-brass">Witness console</p>
       <h1 className="mt-3 font-display text-3xl">Sign in</h1>
 
@@ -84,20 +84,30 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@plant.com"
+            aria-label="Email address"
+            autoComplete="email"
             className="flex-1 rounded-sm border border-iron/30 bg-ground-2 px-3 py-2 text-sm text-paper placeholder:text-iron"
           />
           <button
             type="submit"
             disabled={busy || !email}
-            className="rounded-sm border border-iron/40 px-4 py-2 text-sm text-paper-2 hover:border-brass hover:text-paper disabled:opacity-50"
+            className="rounded-sm border border-iron/40 px-4 py-2 text-sm text-paper-2 transition-colors hover:border-oxide hover:text-paper disabled:opacity-50"
           >
             Send link
           </button>
         </div>
       </form>
 
-      {msg && <p className="mt-4 text-2xs text-verdigris">{msg}</p>}
-      {error && <p className="mt-4 text-2xs text-oxide" role="alert">{error}</p>}
+      {msg && (
+        <p className="mt-4 text-sm text-sev-0-ink" role="status">
+          {msg}
+        </p>
+      )}
+      {error && (
+        <p className="mt-4 rounded-sm border border-sev-3/40 bg-sev-3-bg px-3 py-2 text-sm text-sev-3-ink" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

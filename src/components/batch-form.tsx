@@ -28,7 +28,9 @@ export function BatchForm({
     setError(null);
     setSaved(false);
     setBusy(true);
-    const fd = new FormData(e.currentTarget);
+    // Read the form now: React clears currentTarget once the handler yields.
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const body = {
       code: String(fd.get("code") ?? ""),
       partFamily: (fd.get("partFamily") as string) || null,
@@ -43,7 +45,7 @@ export function BatchForm({
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`Save failed (${res.status}).`);
-      if (mode === "create") e.currentTarget.reset();
+      if (mode === "create") form.reset();
       setSaved(true);
       router.refresh();
     } catch (err) {
@@ -110,16 +112,16 @@ export function BatchForm({
       <button
         type="submit"
         disabled={busy}
-        className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-paper disabled:opacity-50"
+        className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-on-accent transition-colors hover:bg-oxide-deep disabled:opacity-50"
       >
         {busy ? "Saving…" : mode === "create" ? "Add batch" : "Save"}
       </button>
       {error && (
-        <p className="w-full text-2xs text-sev-3" role="alert">
+        <p className="w-full text-2xs text-sev-3-ink" role="alert">
           {error}
         </p>
       )}
-      {saved && !error && <p className="w-full text-2xs text-sev-0">Saved.</p>}
+      {saved && !error && <p className="w-full text-2xs text-sev-0-ink">Saved.</p>}
     </form>
   );
 }

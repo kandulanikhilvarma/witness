@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Metamorphous, Jost, Cabin, JetBrains_Mono, Fraunces } from "next/font/google";
+import { Metamorphous, Cabin, JetBrains_Mono } from "next/font/google";
 import { SITE } from "@/lib/seo";
 import "./globals.css";
 
@@ -16,24 +16,16 @@ const metamorphous = Metamorphous({
   display: "swap",
 });
 
-// Technical labels. Jost is a geometric sans in the Futura/Kabel line: circular
-// bowls, near-monoline strokes. It labels the drawings and gauges, where the
-// display face would be too ornate to read at small sizes.
-const jost = Jost({
-  variable: "--font-jost",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
 // Body. Cabin sits in the humanist tradition of Edward Johnston and Eric Gill:
 // open apertures, a warm axis, high legibility at small sizes. That is the whole
 // job here, dense tables, long clause names, a bench light that is never as good
-// as the design studio's.
+// as the design studio's. Cabin also labels the drawings and carries the
+// italic pull quotes, so the page loads three families, not five.
 const cabin = Cabin({
   variable: "--font-cabin",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -43,16 +35,6 @@ const jetbrains = JetBrains_Mono({
   variable: "--font-jetbrains",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
-  display: "swap",
-});
-
-// Editorial. Used only for pull quotes and the standards commentary, where the
-// page stops being an interface and starts being a document.
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -151,7 +133,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${metamorphous.variable} ${jost.variable} ${cabin.variable} ${jetbrains.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${metamorphous.variable} ${cabin.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <script

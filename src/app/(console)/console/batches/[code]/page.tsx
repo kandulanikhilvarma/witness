@@ -23,7 +23,7 @@ export default async function BatchView({
   const worst = records.reduce((m, r) => Math.max(m, r.severity), 0);
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <Link href="/console/batches" className="text-2xs text-c-text-3 hover:text-c-text">
         ← Batches
       </Link>

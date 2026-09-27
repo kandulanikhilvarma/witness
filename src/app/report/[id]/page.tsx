@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { LocalTime } from "@/components/local-time";
 import { notFound, redirect } from "next/navigation";
 import { supabaseConfigured } from "@/lib/supabase/config";
 import { currentSession } from "@/lib/tenant";
@@ -44,7 +45,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         </div>
         <div className="text-right text-xs text-[#555]">
           <div>{session.tenantName}</div>
-          <div>{new Date().toLocaleDateString()}</div>
+          <div><LocalTime iso={new Date().toISOString()} date /></div>
           <div className="font-mono">#{f.id.slice(0, 8)}</div>
         </div>
       </div>
@@ -69,7 +70,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               <Line k="Anomaly score" v={f.anomaly_score != null ? `${f.anomaly_score.toFixed(2)}×` : "n/a"} />
               <Line k="Batch" v={f.batches.map((b) => `${b.batch_code}${b.supplier ? ` (${b.supplier})` : ""}`).join(", ") || "n/a"} />
               <Line k="Model" v={f.model_version ?? "n/a"} />
-              <Line k="Recorded" v={new Date(f.created_at).toLocaleString()} />
+              <Line k="Recorded" v={<LocalTime iso={f.created_at} />} />
               <Line k="Status" v={reviewed ? `Inspector ${f.review_state}` : `Not yet reviewed (${f.review_state})`} />
             </tbody>
           </table>
@@ -108,7 +109,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   );
 }
 
-function Line({ k, v }: { k: string; v: string }) {
+function Line({ k, v }: { k: string; v: React.ReactNode }) {
   return (
     <tr className="border-b border-[#eee]">
       <td className="w-32 py-1.5 pr-3 align-top text-xs uppercase tracking-wide text-[#888]">{k}</td>

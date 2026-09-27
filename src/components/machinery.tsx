@@ -258,7 +258,17 @@ export function GaugeDial({
         const inn = polar(cx, cy, r + 2, a);
         return <line key={i} x1={inn.x} y1={inn.y} x2={o.x} y2={o.y} stroke={META} strokeWidth="1" opacity="0.6" />;
       })}
-      <line x1={cx} y1={cy} x2={needle.x} y2={needle.y} stroke={INK} strokeWidth="2" strokeLinecap="round" />
+      <line
+        x1={cx}
+        y1={cy}
+        x2={needle.x}
+        y2={needle.y}
+        stroke={INK}
+        strokeWidth="2"
+        strokeLinecap="round"
+        className="needle-sweep"
+        style={{ transformOrigin: `${cx}px ${cy}px`, ["--sweep-from" as string]: `${-sweep * v}deg` }}
+      />
       <circle cx={cx} cy={cy} r="5" fill={INK} />
       <text x={cx} y={cy + 34} textAnchor="middle" fontSize="26" fill={INK} fontFamily="var(--font-figure)" fontWeight="700" className="tabular">
         {display}

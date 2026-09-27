@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { LocalTime } from "@/components/local-time";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -15,7 +16,7 @@ import { findingDetail, linkFindingToBatch, listBatchOptions } from "@/lib/fleet
 
 export const dynamic = "force-dynamic";
 
-const SEV_TEXT = ["text-sev-0", "text-sev-1", "text-sev-2", "text-sev-3", "text-sev-4"];
+const SEV_TEXT = ["text-sev-0-ink", "text-sev-1-ink", "text-sev-2-ink", "text-sev-3-ink", "text-sev-4-ink"];
 
 async function linkBatch(formData: FormData) {
   "use server";
@@ -40,7 +41,7 @@ export default async function FindingPage({ params }: { params: Promise<{ id: st
   const attr = attributionFor(f.attribution);
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8">
       <Link href="/console" className="text-2xs text-c-text-3 hover:text-c-text">
         ← Records
       </Link>
@@ -50,7 +51,7 @@ export default async function FindingPage({ params }: { params: Promise<{ id: st
             {f.iso_mode} · {modeLabel(f.iso_standard, f.iso_mode)}
           </h1>
           <p className="mt-1 text-sm text-c-text-2">
-            {f.iso_standard} · {family} · {new Date(f.created_at).toLocaleString()}
+            {f.iso_standard} · {family} · <LocalTime iso={new Date(f.created_at).toISOString()} />
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -107,7 +108,7 @@ export default async function FindingPage({ params }: { params: Promise<{ id: st
               <p className="text-sm text-c-text">
                 {attr.label}
                 {!typical && (
-                  <span className="ml-2 rounded-sm border border-sev-2/40 bg-sev-2-bg px-1.5 py-0.5 text-2xs text-sev-2">
+                  <span className="ml-2 rounded-sm border border-sev-2/40 bg-sev-2-bg px-1.5 py-0.5 text-2xs text-sev-2-ink">
                     atypical for this mode
                   </span>
                 )}

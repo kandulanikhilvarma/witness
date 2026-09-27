@@ -30,7 +30,7 @@ const FAQ = [
   },
   {
     q: "Can the model invent a failure mode that is not in the standard?",
-    a: "No. Stage 2 is a forced choice against the part family's ISO catalogue, and a code that is not on the list is discarded. Without an API key the stage runs a deterministic heuristic; with an OpenRouter key it routes to a vision model. The confidence gate, not the source, decides where a finding lands.",
+    a: "No. Stage 2 is a forced choice against the part family's ISO catalogue, and a code that is not on the list is discarded: the finding is kept with confidence 0, so it always goes to a person. Without an API key the stage runs a deterministic heuristic; with an OpenRouter key it routes to a vision model. The confidence gate, not the source, decides where a finding lands.",
   },
   {
     q: "Who has the final say on a classification, the model or the inspector?",
@@ -106,7 +106,8 @@ export default function TransparencyPage() {
 
       <Block title="Stage-2 forces a choice">
         Given an anomalous crop, Stage-2 must return one code from the part
-        family&apos;s ISO catalog. A hallucinated code is discarded. Without an
+        family&apos;s ISO catalog. A hallucinated code is discarded and the finding
+        drops to confidence 0, so it can never file itself. Without an
         API key it uses a deterministic heuristic; with an OpenRouter key it routes
         to a vision model. Either way the confidence gate, not the source, decides
         whether a finding auto-files or waits for review.
