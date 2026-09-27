@@ -4,6 +4,7 @@ import { CONFIDENCE_GATE, agreement, forceChoice, routeFinding, validReview, rev
 import { applyFilter, countBy, crossTab, type Finding } from "./buckets";
 import { scoreProvenance, provenanceBand } from "./provenance";
 import { toCsv } from "./csv";
+import { parseCase } from "./cases";
 
 describe("iso catalogue", () => {
   it("has unique codes per family and five severity grades", () => {
@@ -122,5 +123,31 @@ describe("csv", () => {
   it("quotes fields and defuses spreadsheet formulas", () => {
     const out = toCsv([{ a: 'say "hi", ok', b: "=HYPERLINK(1)", c: -3 }]);
     expect(out).toBe('"a","b","c"\r\n"say ""hi"", ok","\'=HYPERLINK(1)","-3"\r\n');
+  });
+});
+
+describe("parseCase", () => {
+  const form = (o: Record<string, string>) => {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(o)) fd.set(k, v);
+    return fd;
+  };
+  it("needs an RMA and trims blanks to null", () => {
+    expect(parseCase(form({ rma: "  " })).ok).toBe(false);
+    const r = parseCase(form({ rma: " RMA-1 ", customer: " ", run_hours: "1200" }));
+    expect(r).toEqual({
+      ok: true,
+      value: expect.objectContaining({ rma: "RMA-1", customer: null, run_hours: 1200, status: "open" }),
+    });
+  });
+  it("rejects fractional or negative hours and unknown enums", () => {
+    expect(parseCase(form({ rma: "R", run_hours: "1.5" })).ok).toBe(false);
+    expect(parseCase(form({ rma: "R", run_hours: "-2" })).ok).toBe(false);
+    expect(parseCase(form({ rma: "R", status: "lost" })).ok).toBe(false);
+    expect(parseCase(form({ rma: "R", disposition: "shrug" })).ok).toBe(false);
+  });
+  it("will not close a case without a disposition", () => {
+    expect(parseCase(form({ rma: "R", status: "closed" })).ok).toBe(false);
+    expect(parseCase(form({ rma: "R", status: "closed", disposition: "scrap" })).ok).toBe(true);
   });
 });

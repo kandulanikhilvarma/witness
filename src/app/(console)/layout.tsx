@@ -14,6 +14,7 @@ const NAV = supabaseConfigured
       { href: "/console/intake", label: "Intake" },
       { href: "/console/enrol", label: "Enrol" },
       { href: "/console/review", label: "Review" },
+      { href: "/console/cases", label: "Cases" },
       { href: "/console/insights", label: "Insights" },
       { href: "/console/batches", label: "Batches" },
     ]
