@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 interface Result {
   provenance: { score: number };
@@ -9,7 +10,40 @@ interface Result {
   nearest: { distance: number; image_name: string | null } | null;
 }
 
-export function IntakeForm({ enrolmentId }: { enrolmentId?: string } = {}) {
+const MAX_BYTES = 10 * 1024 * 1024; // the bucket's own limit
+const EXT: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/heic": "heic",
+  "image/heif": "heif",
+  "image/avif": "avif",
+  "image/tiff": "tiff",
+};
+
+async function sha256Hex(file: File): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// The original goes from the browser straight into the tenant's folder of the
+// private bucket, so a full-size phone photo never meets Vercel's 4.5 MB
+// function body cap; the ingest route then reads it back by path. Returns the
+// object path, or null when storage is unavailable (for example before the
+// bucket migration), in which case the caller falls back to a plain upload.
+async function uploadOriginal(file: File, tenantId: string): Promise<string | null> {
+  const ext = EXT[file.type];
+  if (!ext) return null;
+  const path = `${tenantId}/${await sha256Hex(file)}.${ext}`;
+  const { error } = await supabaseBrowser()
+    .storage.from("witness-originals")
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (!error || /exists/i.test(error.message)) return path;
+  console.warn("[intake] direct upload unavailable, falling back:", error.message);
+  return null;
+}
+
+export function IntakeForm({ enrolmentId, tenantId }: { enrolmentId?: string; tenantId?: string } = {}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,11 +57,25 @@ export function IntakeForm({ enrolmentId }: { enrolmentId?: string } = {}) {
     setResult(null);
     setBusy(true);
     try {
-      const res = await fetch("/api/ingest", { method: "POST", body: new FormData(form) });
-      // ponytail: Vercel rejects request bodies over 4.5 MB before our route
-      // runs, so a full-size phone original cannot pass through a function.
-      // Upgrade path: a signed upload URL straight to the witness-originals
-      // bucket, then POST only the object path here.
+      const fd = new FormData(form);
+      const file = fd.get("file");
+      if (!(file instanceof File) || file.size === 0) throw new Error("Choose a photo first.");
+      if (file.size > MAX_BYTES) throw new Error("That photo is over 10 MB.");
+
+      const path = tenantId ? await uploadOriginal(file, tenantId) : null;
+      const res = path
+        ? await fetch("/api/ingest", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              path,
+              filename: file.name,
+              channel: fd.get("channel") ?? "portal",
+              enrolment_id: fd.get("enrolment_id") ?? null,
+            }),
+          })
+        : await fetch("/api/ingest", { method: "POST", body: fd });
+      // Only the multipart fallback can hit Vercel's 4.5 MB request cap.
       if (res.status === 413) throw new Error("That photo is over the 4.5 MB upload limit. Export it at a smaller size and try again.");
       const body = await res.json();
       if (!res.ok) throw new Error(body?.error ?? `Upload failed (${res.status}).`);

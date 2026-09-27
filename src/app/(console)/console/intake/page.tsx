@@ -62,7 +62,7 @@ export default async function IntakePage() {
         </p>
       </header>
 
-      <IntakeForm />
+      <IntakeForm tenantId={session.tenantId} />
 
       <div className="mt-8 space-y-4">
         {assets.length === 0 ? (
