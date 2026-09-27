@@ -3,6 +3,7 @@ import { supabaseConfigured } from "@/lib/supabase/config";
 import { supabaseServer } from "@/lib/supabase/server";
 import { currentSession } from "@/lib/tenant";
 import { classifyCrop, CONFIDENCE_GATE, vlmConfigured } from "@/lib/stage2";
+import { routeFinding } from "@/lib/gate";
 import { makeThumb } from "@/lib/pipeline";
 import { STANDARD, type PartFamily } from "@/lib/iso";
 import { checkImage, decodeImagePayload } from "@/lib/upload";
@@ -71,7 +72,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not read that image." }, { status: 422 });
   }
 
-  const reviewState = result.confidence >= CONFIDENCE_GATE ? "auto" : "queued";
+  // The mode's review history can veto an auto-file. Reads model_* (the
+  // 2026-09-27 migration); before that migration the query errors and the
+  // plain confidence gate decides alone.
+  let track: { reviewed: number; agreed: number } | null = null;
+  if (result.confidence >= CONFIDENCE_GATE) {
+    const { data: hist, error: histErr } = await sb
+      .from("findings")
+      .select("iso_mode")
+      .eq("model_mode", result.modeCode)
+      .in("review_state", ["confirmed", "corrected"])
+      .limit(1000);
+    if (!histErr && hist) {
+      track = {
+        reviewed: hist.length,
+        agreed: hist.filter((h) => (h as { iso_mode: string }).iso_mode === result.modeCode).length,
+      };
+    }
+  }
+  const route = routeFinding(result.confidence, track);
+  const reviewState = route.state;
   const anomaly =
     typeof anomalyScore === "number" && Number.isFinite(anomalyScore) ? anomalyScore : null;
 
@@ -99,7 +119,14 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { id: finding.id, result, routed: reviewState, gate: CONFIDENCE_GATE, vlmConfigured: vlmConfigured() },
+    {
+      id: finding.id,
+      result,
+      routed: reviewState,
+      reason: route.reason,
+      gate: CONFIDENCE_GATE,
+      vlmConfigured: vlmConfigured(),
+    },
     { status: 201 },
   );
 }
