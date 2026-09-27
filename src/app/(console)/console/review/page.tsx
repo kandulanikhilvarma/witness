@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { SubmitButton } from "@/components/submit-button";
+import { validReview } from "@/lib/gate";
 import { supabaseConfigured } from "@/lib/supabase/config";
 import { supabaseServer } from "@/lib/supabase/server";
 import { currentSession } from "@/lib/tenant";
@@ -14,7 +16,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const SEV_TEXT = ["text-sev-0", "text-sev-1", "text-sev-2", "text-sev-3", "text-sev-4"];
+const SEV_TEXT = ["text-sev-0-ink", "text-sev-1-ink", "text-sev-2-ink", "text-sev-3-ink", "text-sev-4-ink"];
 
 type Queued = {
   id: string;
@@ -33,38 +35,72 @@ type Queued = {
 // The inspector is the source of truth; Stage-2 only proposed. Saving with the
 // suggestion untouched confirms it; changing the mode or severity corrects it.
 // Either way the row leaves the queue and flows into the insights cube.
+//
+// The model's own call is not lost when the inspector corrects it: a database
+// trigger pins findings.model_* on every update (see supabase/migrations).
 async function saveReview(formData: FormData) {
   "use server";
   const id = String(formData.get("id") ?? "");
-  const mode = String(formData.get("mode") ?? "");
-  const sev = Number(formData.get("severity"));
-  const attribution = String(formData.get("attribution") ?? "") || null;
-  const origMode = String(formData.get("orig_mode") ?? "");
-  const origSev = Number(formData.get("orig_sev"));
-  if (!id || !mode) return;
-
   const session = await currentSession();
-  if (!session) return;
-  const changed = mode !== origMode || sev !== origSev;
+  if (!session) redirect("/login");
+
+  // Read the stored finding rather than trusting hidden fields for the
+  // original call and the part family.
   const sb = await supabaseServer();
-  await sb
+  const { data: cur } = await sb
+    .from("findings")
+    .select("iso_standard, iso_mode, severity")
+    .eq("id", id)
+    .single<{ iso_standard: string; iso_mode: string; severity: number }>();
+  if (!cur) redirect("/console/review?error=missing");
+
+  const review = validReview(
+    {
+      mode: formData.get("mode"),
+      severity: formData.get("severity"),
+      attribution: formData.get("attribution"),
+    },
+    familyForStandard(cur.iso_standard),
+  );
+  if (!review) redirect("/console/review?error=invalid");
+
+  const changed = review.mode !== cur.iso_mode || review.severity !== cur.severity;
+  const { error } = await sb
     .from("findings")
     .update({
-      iso_mode: mode,
-      severity: sev,
-      attribution,
+      iso_mode: review.mode,
+      severity: review.severity,
+      attribution: review.attribution,
       review_state: changed ? "corrected" : "confirmed",
       reviewed_by: session.userId,
     })
     .eq("id", id);
+  if (error) redirect("/console/review?error=save");
+
   revalidatePath("/console/review");
   revalidatePath("/console/insights");
+  revalidatePath("/console");
+  redirect(`/console/review?saved=${changed ? "corrected" : "confirmed"}`);
 }
 
-export default async function ReviewPage() {
+const NOTICE: Record<string, { text: string; tone: "ok" | "err" }> = {
+  confirmed: { text: "Confirmed. The finding left the queue.", tone: "ok" },
+  corrected: { text: "Corrected. The model's original call is kept beside yours.", tone: "ok" },
+  invalid: { text: "That review did not match the part family's catalogue. Nothing was saved.", tone: "err" },
+  missing: { text: "That finding no longer exists.", tone: "err" },
+  save: { text: "The review could not be saved. Try again.", tone: "err" },
+};
+
+export default async function ReviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string; error?: string }>;
+}) {
+  const sp = await searchParams;
+  const notice = NOTICE[sp.saved ?? sp.error ?? ""];
   if (!supabaseConfigured) {
     return (
-      <div className="mx-auto max-w-4xl px-8 py-8 text-c-text">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8 text-c-text">
         <h1 className="font-display text-2xl">Review queue</h1>
         <p className="mt-2 text-sm text-c-text-2">
           The review queue runs on the Supabase workspace.
@@ -82,12 +118,16 @@ export default async function ReviewPage() {
       "id, iso_standard, iso_mode, severity, confidence, anomaly_score, attribution, crop_uri, evidence_text, model_version, created_at",
     )
     .eq("review_state", "queued")
+    // Worst and least certain first: a person's time goes where the model is
+    // both unsure and the stakes are high. Those are also the best labels.
+    .order("severity", { ascending: false })
+    .order("confidence", { ascending: true, nullsFirst: true })
     .order("created_at", { ascending: false })
     .limit(50);
   const queue = (data ?? []) as Queued[];
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-6">
         <h1 className="font-display text-2xl">Review queue</h1>
         <p className="mt-1 text-sm text-c-text-2">
@@ -96,6 +136,19 @@ export default async function ReviewPage() {
           set the cause, and it flows into the insights cube.
         </p>
       </header>
+
+      {notice && (
+        <p
+          role={notice.tone === "err" ? "alert" : "status"}
+          className={`mb-4 rounded-sm border px-4 py-2.5 text-sm ${
+            notice.tone === "err"
+              ? "border-sev-3/40 bg-sev-3-bg text-sev-3-ink"
+              : "border-sev-0/40 bg-sev-0-bg text-sev-0-ink"
+          }`}
+        >
+          {notice.text}
+        </p>
+      )}
 
       {queue.length === 0 ? (
         <p className="rounded-sm border border-dashed border-c-line bg-c-surface p-8 text-center text-sm text-c-text-3">
@@ -123,8 +176,6 @@ function ReviewCard({ f }: { f: Queued }) {
       className="grid gap-5 rounded-sm border border-c-line bg-c-surface p-4 md:grid-cols-[160px_1fr]"
     >
       <input type="hidden" name="id" value={f.id} />
-      <input type="hidden" name="orig_mode" value={f.iso_mode} />
-      <input type="hidden" name="orig_sev" value={f.severity} />
 
       <div>
         {f.crop_uri ? (
@@ -203,9 +254,7 @@ function ReviewCard({ f }: { f: Queued }) {
           </label>
         </div>
 
-        <button className="rounded-sm bg-c-focus px-4 py-2 text-sm font-medium text-paper">
-          Save review
-        </button>
+        <SubmitButton pending="Saving…">Save review</SubmitButton>
       </div>
     </form>
   );

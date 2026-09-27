@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { agreement } from "@/lib/gate";
 import { redirect } from "next/navigation";
 import { supabaseConfigured } from "@/lib/supabase/config";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -22,7 +23,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const SEV_TEXT = ["text-sev-0", "text-sev-1", "text-sev-2", "text-sev-3", "text-sev-4"];
+const SCAN = 2000;
+const SEV_TEXT = ["text-sev-0-ink", "text-sev-1-ink", "text-sev-2-ink", "text-sev-3-ink", "text-sev-4-ink"];
 const SEV_BG = ["bg-sev-0-bg", "bg-sev-1-bg", "bg-sev-2-bg", "bg-sev-3-bg", "bg-sev-4-bg"];
 
 type Row = { iso_standard: string; iso_mode: string; severity: number; attribution: string | null };
@@ -57,7 +59,7 @@ export default async function InsightsPage({
 }) {
   if (!supabaseConfigured) {
     return (
-      <div className="mx-auto max-w-4xl px-8 py-8 text-c-text">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8 text-c-text">
         <h1 className="font-display text-2xl">Insights</h1>
         <p className="mt-2 text-sm text-c-text-2">
           The bucket engine runs on the Supabase workspace. This deployment is on
@@ -71,11 +73,20 @@ export default async function InsightsPage({
 
   const sp = await searchParams;
   const sb = await supabaseServer();
-  const { data } = await sb
-    .from("findings")
-    .select("iso_standard, iso_mode, severity, attribution")
-    .limit(2000);
+  const [{ data }, pairs] = await Promise.all([
+    sb.from("findings").select("iso_standard, iso_mode, severity, attribution").limit(SCAN),
+    // Separate query: model_* exist only once the 2026-09-27 migration has run,
+    // and the cube must still render on a database that has not had it yet.
+    sb
+      .from("findings")
+      .select("iso_standard, iso_mode, model_mode, review_state")
+      .in("review_state", ["confirmed", "corrected"])
+      .limit(SCAN),
+  ]);
   const rows = (data ?? []) as Row[];
+  const agree = pairs.error
+    ? null
+    : agreement((pairs.data ?? []) as { model_mode: string | null; iso_mode: string; review_state: string }[]);
 
   const all: Finding[] = rows.map((r) => ({
     mode: r.iso_mode,
@@ -107,7 +118,7 @@ export default async function InsightsPage({
     rows.find((r) => r.iso_mode === code)?.iso_standard ?? "ISO 15243";
 
   return (
-    <div className="mx-auto max-w-5xl px-8 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl">Insights</h1>
@@ -237,7 +248,7 @@ export default async function InsightsPage({
           {/* Atypical cause flag — where attribution is off the ISO list for the mode. */}
           {flagged.length > 0 && (
             <section className="mt-6 rounded-sm border border-sev-2/40 bg-sev-2-bg p-4">
-              <h2 className="text-2xs uppercase tracking-wide text-sev-2">
+              <h2 className="text-2xs uppercase tracking-wide text-sev-2-ink">
                 {flagged.length} atypical cause{flagged.length === 1 ? "" : "s"}
               </h2>
               <p className="mt-1 text-2xs text-c-text-2">
@@ -256,8 +267,81 @@ export default async function InsightsPage({
               </ul>
             </section>
           )}
+
+          <AgreementPanel agree={agree} standardOf={standardOf} />
+          {rows.length === SCAN && (
+            <p className="mt-4 text-2xs text-c-text-3">
+              Counted over the latest {SCAN} findings. Export for the full workspace.
+            </p>
+          )}
         </>
       )}
     </div>
+  );
+}
+
+// Model versus inspector, per proposed mode. The honest measure of the model:
+// not what confidence it reports, but how often a person kept its call.
+function AgreementPanel({
+  agree,
+  standardOf,
+}: {
+  agree: ReturnType<typeof agreement> | null;
+  standardOf: (code: string) => string;
+}) {
+  return (
+    <section className="mt-6 rounded-sm border border-c-line bg-c-surface p-4">
+      <h2 className="text-2xs uppercase tracking-wide text-c-text-3">Model against inspector</h2>
+      {!agree ? (
+        <p className="mt-2 text-2xs text-c-text-2">
+          Needs the model-suggestion columns. Apply{" "}
+          <span className="tabular">supabase/migrations/20260927120000_model_suggestion_and_originals.sql</span>.
+        </p>
+      ) : agree.reviewed === 0 ? (
+        <p className="mt-2 text-2xs text-c-text-2">
+          No reviewed findings with a recorded model call yet. Confirm or correct a few in Review.
+        </p>
+      ) : (
+        <>
+          <p className="mt-1 text-2xs text-c-text-2">
+            Inspectors kept the model&apos;s mode on{" "}
+            <span className="tabular text-c-text">
+              {agree.agreed}/{agree.reviewed}
+            </span>{" "}
+            reviewed findings ({Math.round((agree.agreed / agree.reviewed) * 100)}%). Tune the gate
+            against this, not against the confidence the model reports.
+          </p>
+          <table className="mt-3 w-full text-2xs">
+            <thead className="text-left uppercase tracking-wide text-c-text-3">
+              <tr>
+                <th className="py-1 font-medium">Proposed mode</th>
+                <th className="py-1 text-right font-medium">Reviewed</th>
+                <th className="py-1 text-right font-medium">Kept</th>
+                <th className="w-1/3 py-1 pl-3 font-medium">Agreement</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agree.byMode.map((m) => (
+                <tr key={m.mode} className="border-t border-c-line">
+                  <td className="py-1.5 text-c-text-2">
+                    <span className="tabular text-c-text-3">{m.mode}</span> {modeLabel(standardOf(m.mode), m.mode)}
+                  </td>
+                  <td className="py-1.5 text-right tabular">{m.reviewed}</td>
+                  <td className="py-1.5 text-right tabular">{m.agreed}</td>
+                  <td className="py-1.5 pl-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-sm bg-c-surface-2">
+                        <div className="h-full bg-c-text-3" style={{ width: `${m.rate * 100}%` }} />
+                      </div>
+                      <span className="w-9 text-right tabular text-c-text-2">{Math.round(m.rate * 100)}%</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </section>
   );
 }

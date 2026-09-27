@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { SUPABASE_ANON_KEY, SUPABASE_URL, supabaseConfigured } from "@/lib/supabase/config";
 
-// Refresh the Supabase auth cookie on each request so Server Components see a
-// live session. No-op when Supabase isn't configured (PGlite fallback).
-export async function middleware(request: NextRequest) {
+// Refresh the Supabase auth cookie so Server Components see a live session.
+// No-op when Supabase isn't configured (PGlite fallback). Next 16 calls this
+// file "proxy" (formerly middleware).
+export async function proxy(request: NextRequest) {
   if (!supabaseConfigured) return NextResponse.next();
 
   const response = NextResponse.next({ request });
@@ -21,6 +22,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except static assets and the API (routes manage their own auth).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+  // Only the signed-in surfaces. The marketing pages never read a session, so
+  // they should not pay an auth round trip on every view. API routes manage
+  // their own auth.
+  matcher: ["/console/:path*", "/login", "/report/:path*"],
 };

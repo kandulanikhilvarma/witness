@@ -3,6 +3,9 @@ import sharp from "sharp";
 import { StubClassifier } from "./classifier";
 import { extractFeatures } from "./pipeline";
 import { modesFor, STANDARD, type PartFamily } from "./iso";
+import { forceChoice } from "./gate";
+
+export { CONFIDENCE_GATE } from "./gate";
 
 // Stage-2: given an anomalous part, force a choice among the ISO failure modes
 // for its family. Two backends behind one call. The default is keyless and
@@ -11,8 +14,6 @@ import { modesFor, STANDARD, type PartFamily } from "./iso";
 // dependency. When OPENROUTER_API_KEY is set the call routes to a real vision
 // model instead; the interface and the downstream gate do not change. A forced
 // choice: the model may only return a code from the family's own catalog.
-
-export const CONFIDENCE_GATE = 0.7;
 
 export interface Stage2Result {
   modeCode: string;
@@ -57,7 +58,13 @@ async function keylessForcedChoice(buffer: Buffer, family: PartFamily): Promise<
 async function openRouterForcedChoice(buffer: Buffer, family: PartFamily): Promise<Stage2Result> {
   const model = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
   const modes = modesFor(family);
-  const jpeg = await sharp(buffer, { failOn: "none" }).jpeg({ quality: 80 }).toBuffer();
+  // A 1024 px long edge is plenty to read surface damage, and keeps the token
+  // bill and latency of a phone photo (4000+ px) in check.
+  const jpeg = await sharp(buffer, { failOn: "none" })
+    .rotate()
+    .resize(1024, 1024, { fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 80 })
+    .toBuffer();
   const dataUri = `data:image/jpeg;base64,${jpeg.toString("base64")}`;
   const list = modes.map((m) => `${m.code} = ${m.label}`).join("; ");
 
@@ -71,6 +78,7 @@ async function openRouterForcedChoice(buffer: Buffer, family: PartFamily): Promi
       authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
       "x-title": "Witness",
     },
+    signal: AbortSignal.timeout(30_000),
     body: JSON.stringify({
       model,
       temperature: 0,
@@ -89,18 +97,7 @@ async function openRouterForcedChoice(buffer: Buffer, family: PartFamily): Promi
   if (!res.ok) throw new Error(`openrouter ${res.status} (${model}): ${(await res.text()).slice(0, 140)}`);
   const j = await res.json();
   const text: string = j.choices?.[0]?.message?.content ?? "";
-  const parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-
-  // Force the choice back onto the catalog — a hallucinated code is discarded.
-  const mode = modes.find((m) => m.code === String(parsed.mode_code)) ?? modes[0];
-  const severity = Math.min(mode.ceiling, Math.max(0, Math.round(Number(parsed.severity) || 0)));
-  const confidence = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
-  return {
-    modeCode: mode.code,
-    modeLabel: mode.label,
-    severity,
-    confidence,
-    rationale: String(parsed.rationale || "").slice(0, 500),
-    source: `openrouter:${model}`,
-  };
+  // Force the choice back onto the catalog. An off-list code is discarded and
+  // the record goes to a person with confidence 0 (see forceChoice).
+  return { ...forceChoice(text, family), source: `openrouter:${model}` };
 }

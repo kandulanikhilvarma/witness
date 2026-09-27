@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getRecord, setReview } from "@/lib/db";
 import { modesFor } from "@/lib/iso";
+import { supabaseConfigured } from "@/lib/supabase/config";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,9 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // The PGlite demo routes carry no auth. On a Supabase deploy they must not
+  // exist at all, or anyone could write to the in-process demo database.
+  if (supabaseConfigured) return NextResponse.json({ error: "Not found." }, { status: 404 });
   const { id } = await params;
   const rec = await getRecord(id);
   if (!rec) return NextResponse.json({ error: "Not found." }, { status: 404 });

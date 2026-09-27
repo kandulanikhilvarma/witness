@@ -24,11 +24,29 @@ export interface ScoreResult {
   heatmap: number[][];
 }
 
+// On Vercel the function lives on this deployment's own URL, which Vercel sets;
+// the request Host header is only trusted for local development, where there is
+// no VERCEL_URL. Never build a server-side fetch target from a client header in
+// production.
 async function functionUrl(): Promise<string> {
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = host.startsWith("localhost") ? "http" : "https";
-  return `${proto}://${host}/api/patchcore`;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/api/patchcore`;
+  const host = (await headers()).get("host") ?? "localhost:3000";
+  return `http://${host}/api/patchcore`;
+}
+
+// The function refuses callers without this token on Vercel (api/patchcore.py).
+function callPatchcore(payload: unknown, timeoutMs: number) {
+  return functionUrl().then((url) =>
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-witness-token": process.env.PATCHCORE_TOKEN ?? "",
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(timeoutMs),
+    }),
+  );
 }
 
 // ponytail: the reference thumbs go to the function inline as one JSON body.
@@ -60,11 +78,7 @@ export async function trainEnrolment(
     metrics: Record<string, number>;
   };
   try {
-    const res = await fetch(await functionUrl(), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ op: "train", images }),
-    });
+    const res = await callPatchcore({ op: "train", images }, 55_000);
     body = await res.json();
     if (!res.ok || body.error) throw new Error(body.error ?? `train failed (${res.status})`);
   } catch (err) {
@@ -106,12 +120,13 @@ export async function scoreImage(
 ): Promise<ScoreResult | { error: string }> {
   const coreset = await loadCoreset(enrolId);
   if (!coreset) return { error: "This set has no trained model. Train it first." };
-  const res = await fetch(await functionUrl(), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ op: "score", coreset, image: imageDataUri }),
-  });
-  const body = await res.json();
+  let res: Response;
+  try {
+    res = await callPatchcore({ op: "score", coreset, image: imageDataUri }, 20_000);
+  } catch {
+    return { error: "The anomaly scorer did not answer in time. Try again." };
+  }
+  const body = await res.json().catch(() => ({ error: `score failed (${res.status})` }));
   if (!res.ok || body.error) return { error: body.error ?? `score failed (${res.status})` };
   return body as ScoreResult;
 }
